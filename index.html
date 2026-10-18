@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CinéVault - Retro Neon Ultimate</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            retro: ['Orbitron', 'sans-serif'],
+            body: ['Rajdhani', 'sans-serif']
+          },
+          colors: {
+            neon: {
+              pink: '#ff007f',
+              cyan: '#00f3ff',
+              purple: '#9d00ff',
+              darkBg: '#000000',
+              cardBg: '#0c0a14',
+              border: '#2a1a4a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #000000;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(157, 0, 255, 0.14), transparent 70%),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 1));
+      color: #e2e8f0;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .neon-text-pink { text-shadow: 0 0 8px rgba(255, 0, 127, 0.6), 0 0 20px rgba(255, 0, 127, 0.3); }
+    .neon-text-cyan { text-shadow: 0 0 8px rgba(0, 243, 255, 0.6), 0 0 20px rgba(0, 243, 255, 0.3); }
+    .neon-box-pink { box-shadow: 0 0 15px rgba(255, 0, 127, 0.25), inset 0 0 10px rgba(255, 0, 127, 0.1); border-color: rgba(255, 0, 127, 0.4); }
+    .neon-box-cyan { box-shadow: 0 0 15px rgba(0, 243, 255, 0.25), inset 0 0 10px rgba(0, 243, 255, 0.1); border-color: rgba(0, 243, 255, 0.4); }
+    .neon-btn { background: linear-gradient(135deg, #ff007f 0%, #9d00ff 100%); box-shadow: 0 0 15px rgba(255, 0, 127, 0.4); }
+    .neon-btn:active { transform: scale(0.97); }
+    .modal-scroll { max-height: calc(85vh - 70px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .grid-pattern {
+      background-size: 40px 40px;
+      background-image: linear-gradient(to right, rgba(157, 0, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(157, 0, 255, 0.03) 1px, transparent 1px);
+    }
+    #sidebar { transition: transform 0.3s ease-in-out; }
+    /* Style Logo CD Néon */
+    .neon-cd-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #ff007f, #00f3ff, #9d00ff, #ff007f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px rgba(0, 243, 255, 0.6), inset 0 0 6px rgba(255, 0, 127, 0.8);
+      position: relative;
+    }
+    .neon-cd-logo::after {
+      content: '';
+      width: 12px;
+      height: 12px;
+      background: #000;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-12 grid-pattern">
+
+  <!-- MODAL D'ALERTE À L'OUVERTURE -->
+  <div id="welcome-alert-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#0c0a14] border border-cyan-500/50 w-full max-w-md rounded-2xl p-6 text-center space-y-4 shadow-[0_0_40px_rgba(0,243,255,0.25)]">
+      <div class="w-14 h-14 mx-auto neon-cd-logo flex items-center justify-center"></div>
+      <h3 class="font-retro font-black text-neon-cyan text-base tracking-wider">CINÉVAULT - RAPPORT DU JOUR</h3>
+      <div id="alert-content-box" class="text-xs text-slate-300 space-y-2 text-left bg-black/60 p-3.5 rounded-xl border border-purple-900/50">
+        <!-- Généré dynamiquement -->
+      </div>
+      <button onclick="closeWelcomeAlert()" class="w-full neon-btn py-3 rounded-lg font-retro font-bold text-xs text-white uppercase tracking-wider cursor-pointer">
+        Accéder au QG
+      </button>
+    </div>
+  </div>
+
+  <!-- MENU LATÉRAL -->
+  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden"></div>
+  <aside id="sidebar" class="fixed top-0 left-0 bottom-0 w-72 bg-[#08060f] border-r border-purple-900/60 z-50 transform -translate-x-full flex flex-col shadow-2xl h-full">
+    <div class="p-5 border-b border-purple-900/40 flex justify-between items-center bg-[#000000] shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="neon-cd-logo"></div>
+        <span class="font-retro font-black text-white text-base tracking-wider">CINE<span class="text-neon-pink">VAULT</span></span>
+      </div>
+      <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white cursor-pointer p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <div class="p-4 space-y-2 flex-1 overflow-y-auto overscroll-contain">
+      <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-1">Navigation</p>
+      
+      <button onclick="switchTab('orders')" id="nav-orders" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-white bg-purple-950/60 border border-pink-500/40 cursor-pointer">
+        <i class="fa-solid fa-film text-neon-pink w-5"></i> Mes Précommandes
+      </button>
+
+      <button onclick="switchTab('cinema')" id="nav-cinema" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
+        <i class="fa-solid fa-ticket text-amber-400 w-5"></i> Sorties Cinéma ⏳
+      </button>
+
+      <button onclick="switchTab('collection')" id="nav-collection" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
+        <i class="fa-solid fa-box-archive text-emerald-400 w-5"></i> Ma Collection
+      </button>
+
+      <button onclick="switchTab('wishlist')" id="nav-wishlist" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
+        <i class="fa-solid fa-heart text-neon-cyan w-5"></i> Wishlist / Intéressants
+      </button>
+
+      <button onclick="switchTab('budget')" id="nav-budget" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
+        <i class="fa-solid fa-wallet text-purple-400 w-5"></i> Budget & Stats
+      </button>
+
+      <div class="pt-4 mt-4 border-t border-purple-900/40 space-y-2">
+        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-1">Outils Cinéphile</p>
+        <button onclick="triggerRoulette()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-amber-300 hover:bg-amber-950/30 border border-amber-500/30 cursor-pointer">
+          <i class="fa-solid fa-dice text-amber-400 w-5"></i> Ciné-Roulette
+        </button>
+      </div>
+
+      <div class="pt-4 mt-4 border-t border-purple-900/40">
+        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Synchronisation</p>
+        <button onclick="exportDataText()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer">
+          <i class="fa-solid fa-copy text-emerald-400 w-5"></i> Copier les données
+        </button>
+        <button onclick="importDataText()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer mt-1">
+          <i class="fa-solid fa-paste text-cyan-400 w-5"></i> Coller une sauvegarde
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- EN-TÊTE -->
+  <header class="sticky top-0 z-40 bg-[#000000]/90 backdrop-blur-md border-b border-purple-900/40 px-6 py-4 shadow-2xl">
+    <div class="max-w-6xl mx-auto flex justify-between items-center gap-2">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="text-slate-300 hover:text-white p-2 text-xl cursor-pointer">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="flex items-center gap-2.5">
+          <div class="neon-cd-logo"></div>
+          <h1 id="page-title" class="text-lg sm:text-xl font-retro font-black tracking-wider text-white">PRÉCOMMANDES</h1>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="triggerRoulette()" title="Film au hasard" class="bg-purple-950/80 border border-amber-500/40 text-amber-300 hover:text-white p-2.5 rounded-lg text-sm cursor-pointer transition-all">
+          <i class="fa-solid fa-dice"></i>
+        </button>
+        <button onclick="openModal()" class="neon-btn text-white font-retro font-bold text-xs uppercase px-4 py-2.5 rounded-lg flex items-center gap-2 tracking-wider transition-all cursor-pointer">
+          <i class="fa-solid fa-plus"></i> <span id="btn-add-text" class="hidden sm:inline">Ajouter un film</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="p-4 sm:p-6 max-w-6xl mx-auto">
+
+    <div id="view-items">
+      
+      <!-- STATISTIQUES & METRICS -->
+      <div id="stats-box" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-pink-500/30 neon-box-pink backdrop-blur-sm flex flex-col justify-between">
+          <p class="text-xs font-bold tracking-widest text-pink-300 uppercase" id="stat-label-left">Prochaine Sortie</p>
+          <div id="stat-next-release" class="text-base font-retro font-bold text-white mt-1 truncate">Aucune</div>
+        </div>
+        <div id="stat-debit-box" class="bg-[#0c0a14]/90 p-4 rounded-xl border border-amber-500/30 backdrop-blur-sm flex flex-col justify-between">
+          <p class="text-xs font-bold tracking-widest text-amber-300 uppercase" id="stat-label-center">Débits à venir</p>
+          <p id="stat-total-debit" class="text-2xl font-retro font-black text-amber-400 mt-1">0.00 €</p>
+        </div>
+        <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-cyan-500/30 neon-box-cyan backdrop-blur-sm flex flex-col justify-between">
+          <p class="text-xs font-bold tracking-widest text-cyan-300 uppercase" id="stat-label-count">Articles en cours</p>
+          <p id="stat-total-count" class="text-3xl font-retro font-black text-neon-cyan neon-text-cyan mt-1">0</p>
+        </div>
+      </div>
+
+      <!-- BARRE DE RECHERCHE ET FILTRES INTERNES -->
+      <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-3.5 rounded-xl mb-6 space-y-3">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
+          <input type="text" id="internal-search-input" oninput="render()" placeholder="Rechercher (titre, genre, saga, réalisateur...)..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-neon-cyan font-semibold">
+        </div>
+        
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-purple-900/40 text-xs">
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+            <span class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-wider">Format :</span>
+            <button onclick="setFormatFilter('ALL')" id="filter-fmt-ALL" class="px-2.5 py-1 rounded bg-pink-950 text-neon-pink font-bold border border-pink-500/40">Tous</button>
+            <button onclick="setFormatFilter('Steelbook')" id="filter-fmt-Steelbook" class="px-2.5 py-1 rounded bg-slate-900 text-slate-400 hover:text-white">Steelbook</button>
+            <button onclick="setFormatFilter('4K')" id="filter-fmt-4K" class="px-2.5 py-1 rounded bg-slate-900 text-slate-400 hover:text-white">4K UHD</button>
+            <button onclick="setFormatFilter('Collector')" id="filter-fmt-Collector" class="px-2.5 py-1 rounded bg-slate-900 text-slate-400 hover:text-white">Collector</button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-wider">Tri :</span>
+            <select id="sort-order" onchange="render()" class="bg-[#000000] border border-purple-900/80 text-xs text-slate-300 rounded px-2 py-1 focus:outline-none focus:border-neon-cyan">
+              <option value="default">Par défaut</option>
+              <option value="alpha">Titre (A-Z)</option>
+              <option value="year">Année / Date</option>
+              <option value="rating">Note (★)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="items-container"></div>
+
+      <div id="empty-state" class="text-center py-20 bg-[#0c0a14]/40 rounded-2xl border border-purple-900/30 backdrop-blur-sm hidden">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-950/50 border border-pink-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(255,0,127,0.15)]">
+          <i class="fa-solid fa-film text-3xl text-neon-pink"></i>
+        </div>
+        <h3 id="empty-title" class="text-lg font-retro font-bold text-white tracking-wide">AUCUN ÉLÉMENT</h3>
+        <p id="empty-desc" class="text-sm text-slate-400 max-w-sm mx-auto mt-1 mb-6 font-medium">Ajoutez vos éditions pour commencer.</p>
+        <button onclick="openModal()" class="neon-btn text-white font-retro text-xs font-bold px-5 py-3 rounded-lg uppercase tracking-wider inline-flex items-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-plus"></i> Ajouter un film
+        </button>
+      </div>
+    </div>
+
+    <!-- STATISTIQUES BUDGET & ANALYTICS -->
+    <div id="view-budget" class="hidden space-y-4 max-w-3xl mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-5 rounded-2xl">
+          <p class="text-xs font-retro font-bold text-emerald-400 mb-1 uppercase">VALEUR DE LA COLLECTION</p>
+          <p id="stats-total-val" class="text-3xl font-retro font-black text-white">0.00 €</p>
+          <span class="text-[10px] text-slate-400">Total estimé de vos films possédés</span>
+        </div>
+        <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-5 rounded-2xl">
+          <p class="text-xs font-retro font-bold text-amber-400 mb-1 uppercase">SAGA LA PLUS REPRÉSENTÉE</p>
+          <p id="stats-top-saga" class="text-xl font-retro font-black text-white truncate">-</p>
+          <span class="text-[10px] text-slate-400" id="stats-top-saga-count">0 film(s)</span>
+        </div>
+      </div>
+
+      <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-6 rounded-2xl shadow-xl">
+        <h3 class="font-retro font-bold text-sm text-neon-cyan mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie"></i> RÉPARTITION DES DÉPENSES PAR MARCHAND
+        </h3>
+        <div id="budget-by-merchant-container" class="space-y-3"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL D'AJOUT / ÉDITION -->
+  <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0c0a14] border border-pink-500/40 w-full max-w-lg rounded-2xl shadow-[0_0_40px_rgba(255,0,127,0.25)] flex flex-col">
+      
+      <div class="p-5 border-b border-purple-900/50 flex justify-between items-center bg-[#000000] rounded-t-2xl">
+        <h2 id="modal-title" class="text-base font-retro font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-film text-neon-pink"></i> CRÉER UNE FICHE FILM
+        </h2>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-6 modal-scroll space-y-4">
+        <form id="order-form" onsubmit="saveOrder(event)" class="space-y-4">
+          <input type="hidden" id="item-id">
+
+          <div>
+            <label class="block text-xs font-retro font-bold text-neon-pink tracking-wider mb-1">TITRE DU FILM *</label>
+            <input type="text" id="title" required oninput="checkDuplicate(this.value)" placeholder="Ex: Saw X, Insidious, Avatar..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-neon-pink font-semibold">
+            <div id="duplicate-warning" class="mt-2 p-2.5 rounded-lg bg-pink-950/80 border border-pink-500 text-pink-300 text-xs font-bold flex items-start gap-2 hidden">
+              <i class="fa-solid fa-triangle-exclamation text-neon-pink text-sm mt-0.5"></i>
+              <span id="duplicate-warning-text"></span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">GENRE / TYPE FILM</label>
+              <input type="text" id="genre" placeholder="Ex: Horreur, Sci-Fi..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">SAGA / FRANCHISE</label>
+              <input type="text" id="saga" placeholder="Ex: Saw, Alien..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-bold text-slate-300 tracking-wider">URL DE L'AFFICHE (IMAGE)</label>
+              <button type="button" onclick="searchPosterGoogle()" class="text-[10px] text-neon-cyan hover:underline font-bold"><i class="fa-solid fa-arrow-up-right-from-square"></i> Trouver sur Google</button>
+            </div>
+            <input type="text" id="image-url" oninput="updatePreview(this.value)" placeholder="https://..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold mb-2">
+            <div id="image-preview-container" class="h-32 bg-[#000000] rounded-lg border border-purple-900/40 overflow-hidden flex items-center justify-center hidden">
+              <img id="image-preview" src="" class="h-full object-contain">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">DATE DE SORTIE / SALLE *</label>
+              <input type="date" id="release-date" required class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">ANNÉE DE SORTIE</label>
+              <input type="number" id="year" placeholder="Ex: 2026" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">RÉALISATEUR(S)</label>
+              <input type="text" id="director" placeholder="Ex: James Wan" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">ACTEURS PRINCIPAUX</label>
+              <input type="text" id="actors" placeholder="Ex: Tobin Bell" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">SYNOPSIS / RÉSUMÉ</label>
+            <textarea id="synopsis" rows="2" placeholder="Résumé du film..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 p-3 bg-purple-950/30 rounded-xl border border-purple-900/50">
+            <div>
+              <label class="block text-xs font-bold text-amber-300 tracking-wider mb-1">NOTE (ÉTOILES)</label>
+              <select id="rating" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2 text-xs text-amber-400 font-bold focus:outline-none">
+                <option value="0">Non noté</option>
+                <option value="5">★★★★★ (Masterpiece)</option>
+                <option value="4">★★★★☆ (Très bon)</option>
+                <option value="3">★★★☆☆ (Bon / Moyen)</option>
+                <option value="2">★★☆☆☆ (Décevant)</option>
+                <option value="1">★☆☆☆☆ (Mauvais)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-cyan-300 tracking-wider mb-1">SUIVI DE PRÊT</label>
+              <input type="text" id="loaned-to" placeholder="Prêté à..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2 text-xs text-white focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">FORMAT</label>
+              <select id="format" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+                <option value="Steelbook 4K">Steelbook 4K UHD</option>
+                <option value="Steelbook Blu-ray">Steelbook Blu-ray</option>
+                <option value="Édition Collector">Édition Collector</option>
+                <option value="4K UHD standard">4K UHD Standard</option>
+                <option value="Blu-ray standard">Blu-ray Standard</option>
+                <option value="Place Cinéma">Place Cinéma / Séance</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">SITE / MAGASIN</label>
+              <select id="merchant" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+                <option value="Fnac">Fnac</option>
+                <option value="Amazon">Amazon</option>
+                <option value="E.Leclerc">E.Leclerc</option>
+                <option value="Cinéma local">Cinéma local / UGC / Pathé</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">PRIX (€)</label>
+              <input type="number" id="price" step="0.01" placeholder="12.00" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">STATUT</label>
+              <select id="status" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
+                <option value="À voir au Cinéma">À voir au Cinéma</option>
+                <option value="Précommandé (Débit à venir)">Précommandé (Débit à venir)</option>
+                <option value="Expédié / Payé">Expédié / Payé</option>
+                <option value="Possédé / Dans la collection">Possédé / Dans la collection</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full neon-btn font-retro font-bold py-3.5 rounded-lg text-white text-xs uppercase tracking-wider mt-4 cursor-pointer">
+            Enregistrer la fiche film
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL LECTURE FICHE FILM -->
+  <div id="detail-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closeDetailModal()">
+    <div class="bg-[#0c0a14] border border-emerald-500/50 w-full max-w-lg rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.25)] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+      <div class="relative bg-black h-64 overflow-hidden flex items-center justify-center">
+        <img id="detail-img" src="" class="w-full h-full object-cover opacity-80">
+        <button onclick="closeDetailModal()" class="absolute top-4 right-4 bg-black/70 text-white rounded-full p-2 hover:bg-black"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-6 modal-scroll space-y-3">
+        <div class="flex justify-between items-start">
+          <h2 id="detail-title" class="text-xl font-retro font-bold text-white"></h2>
+          <span id="detail-year" class="text-xs font-bold text-emerald-400 bg-emerald-950 px-2 py-1 rounded border border-emerald-500/40"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <p id="detail-saga" class="text-xs font-bold text-neon-pink"></p>
+          <div id="detail-rating" class="text-amber-400 text-xs"></div>
+        </div>
+        <div id="detail-genre" class="text-xs text-amber-300 font-bold"></div>
+        <div id="detail-loan" class="hidden text-xs bg-cyan-950/60 border border-cyan-500/40 p-2 rounded text-cyan-300 font-semibold"></div>
+        <div class="text-xs text-slate-300 space-y-1">
+          <p><strong>Réalisateur :</strong> <span id="detail-director" class="text-slate-100"></span></p>
+          <p><strong>Acteurs :</strong> <span id="detail-actors" class="text-slate-100"></span></p>
+        </div>
+        <hr class="border-purple-900/40">
+        <div>
+          <p class="text-xs font-bold text-slate-400 mb-1">SYNOPSIS</p>
+          <p id="detail-synopsis" class="text-xs text-slate-200 leading-relaxed font-medium"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CINÉ-ROULETTE -->
+  <div id="roulette-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0c0a14] border border-amber-500/50 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
+      <h3 class="font-retro font-bold text-amber-400 text-sm tracking-wider flex items-center justify-center gap-2">
+        <i class="fa-solid fa-dice"></i> CINÉ-ROULETTE
+      </h3>
+      <div class="h-48 bg-black rounded-xl border border-purple-900/50 overflow-hidden flex items-center justify-center relative">
+        <img id="roulette-img" src="" class="w-full h-full object-cover hidden">
+        <div id="roulette-placeholder" class="text-slate-500 font-retro text-xs">Tirage au sort...</div>
+      </div>
+      <h4 id="roulette-title" class="font-bold text-base text-white">?</h4>
+      <div class="flex gap-2">
+        <button onclick="spinRoulette()" class="flex-1 neon-btn py-2.5 rounded-lg font-retro font-bold text-xs text-white uppercase">Relancer</button>
+        <button onclick="document.getElementById('roulette-modal').classList.add('hidden')" class="px-4 bg-slate-900 text-slate-300 rounded-lg font-bold text-xs">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 'orders';
+    let currentFormatFilter = 'ALL';
+    let orders = [];
+    let countdownInterval = null;
+
+    try {
+      const savedData = localStorage.getItem('cinevault_clean_v1');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (Array.isArray(parsed)) orders = parsed;
+      }
+    } catch(err) { orders = []; }
+
+    function saveToStorage() {
+      try { localStorage.setItem('cinevault_clean_v1', JSON.stringify(orders)); } catch(e) {}
+      render();
+    }
+
+    // Afficher l'alerte à l'ouverture si des éléments le demandent
+    function checkWelcomeAlert() {
+      const alertBox = document.getElementById('alert-content-box');
+      const modal = document.getElementById('welcome-alert-modal');
+      const now = new Date().getTime();
+      let alertsHtml = '';
+
+      const cinemaAlerts = orders.filter(o => o.category === 'cinema' && o.releaseDate && new Date(o.releaseDate).getTime() >= now && (new Date(o.releaseDate).getTime() - now) <= (7 * 24 * 60 * 60 * 1000));
+      const orderAlerts = orders.filter(o => o.category === 'orders' && o.releaseDate && new Date(o.releaseDate).getTime() >= now && (new Date(o.releaseDate).getTime() - now) <= (7 * 24 * 60 * 60 * 1000));
+
+      if (cinemaAlerts.length > 0) {
+        alertsHtml += `<p class="text-amber-400 font-bold"><i class="fa-solid fa-ticket"></i> <strong>${cinemaAlerts.length} sortie(s) ciné</strong> cette semaine : ${cinemaAlerts.map(c => c.title).join(', ')}</p>`;
+      }
+      if (orderAlerts.length > 0) {
+        alertsHtml += `<p class="text-pink-400 font-bold"><i class="fa-solid fa-box"></i> <strong>${orderAlerts.length} précommande(s)</strong> imminente(s) : ${orderAlerts.map(o => o.title).join(', ')}</p>`;
+      }
+
+      if (alertsHtml !== '') {
+        alertBox.innerHTML = alertsHtml;
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeWelcomeAlert() {
+      document.getElementById('welcome-alert-modal').classList.add('hidden');
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      if (sidebar && overlay) {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      }
+    }
+
+    function checkDuplicate(inputTitle) {
+      const warningBox = document.getElementById('duplicate-warning');
+      const warningText = document.getElementById('duplicate-warning-text');
+      const currentId = document.getElementById('item-id').value;
+
+      if (!inputTitle || inputTitle.trim().length < 2) {
+        warningBox.classList.add('hidden');
+        return;
+      }
+
+      const cleanInput = inputTitle.trim().toLowerCase();
+      const existing = orders.find(o => o.id !== currentId && o.title && o.title.trim().toLowerCase() === cleanInput);
+
+      if (existing) {
+        const catName = existing.category === 'collection' ? 'Collection' : (existing.category === 'cinema' ? 'Sorties Cinéma' : 'Précommandes');
+        warningText.innerText = `ATTENTION ! Ce film existe déjà dans ${catName}.`;
+        warningBox.classList.remove('hidden');
+      } else {
+        warningBox.classList.add('hidden');
+      }
+    }
+
+    function searchPosterGoogle() {
+      const title = document.getElementById('title').value;
+      if (title) {
+        window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(title + ' film affiche poster')}`, '_blank');
+      } else {
+        alert("Saisissez d'abord un titre de film.");
+      }
+    }
+
+    function updatePreview(url) {
+      const preview = document.getElementById('image-preview');
+      const previewContainer = document.getElementById('image-preview-container');
+      if (url && preview && previewContainer) {
+        preview.src = url;
+        previewContainer.classList.remove('hidden');
+      } else if (previewContainer) {
+        previewContainer.classList.add('hidden');
+      }
+    }
+
+    function exportDataText() {
+      const dataStr = JSON.stringify(orders);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(dataStr).then(() => { alert("Données copiées !"); toggleSidebar(); }).catch(() => { prompt("Copie ce code :", dataStr); });
+      } else { prompt("Copie ce code :", dataStr); }
+    }
+
+    function importDataText() {
+      const inputStr = prompt("Colle ici le code de sauvegarde :");
+      if (!inputStr) return;
+      try {
+        const imported = JSON.parse(inputStr);
+        if (Array.isArray(imported)) {
+          orders = imported;
+          saveToStorage();
+          alert("Import réussi !");
+          toggleSidebar();
+        } else { alert("Format invalide."); }
+      } catch(err) { alert("Erreur de lecture."); }
+    }
+
+    function setFormatFilter(fmt) {
+      currentFormatFilter = fmt;
+      ['ALL', 'Steelbook', '4K', 'Collector'].forEach(f => {
+        const btn = document.getElementById(`filter-fmt-${f}`);
+        if(btn) {
+          if(f === fmt) {
+            btn.className = "px-2.5 py-1 rounded bg-pink-950 text-neon-pink font-bold border border-pink-500/40";
+          } else {
+            btn.className = "px-2.5 py-1 rounded bg-slate-900 text-slate-400 hover:text-white";
+          }
+        }
+      });
+      render();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      toggleSidebar();
+
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      ['orders', 'cinema', 'collection', 'wishlist', 'budget'].forEach(t => {
+        const btn = document.getElementById(`nav-${t}`);
+        if(btn) {
+          if(t === tab) {
+            btn.className = "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-white bg-purple-950/60 border border-pink-500/40 cursor-pointer";
+          } else {
+            btn.className = "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer";
+          }
+        }
+      });
+
+      const viewItems = document.getElementById('view-items');
+      const viewBudget = document.getElementById('view-budget');
+      const pageTitle = document.getElementById('page-title');
+      const btnAddText = document.getElementById('btn-add-text');
+
+      if (tab === 'budget') {
+        if(viewItems) viewItems.classList.add('hidden');
+        if(viewBudget) viewBudget.classList.remove('hidden');
+        if(pageTitle) pageTitle.innerText = "BUDGET & STATS";
+        renderBudgetStats();
+      } else {
+        if(viewItems) viewItems.classList.remove('hidden');
+        if(viewBudget) viewBudget.classList.add('hidden');
+        if(pageTitle) {
+          pageTitle.innerText = tab === 'orders' ? "MES PRÉCOMMANDES" : (tab === 'cinema' ? "PROCHAINEMENT AU CINÉMA 🍿" : (tab === 'collection' ? "MA COLLECTION" : "WISHLIST"));
+        }
+        if(btnAddText) btnAddText.innerText = tab === 'cinema' ? "Ajouter une sortie" : "Ajouter un film";
+        render();
+      }
+    }
+
+    function triggerRoulette() {
+      const collectionFilms = orders.filter(o => (o.category || 'orders') === 'collection');
+      if (collectionFilms.length === 0) {
+        alert("Votre collection est vide !");
+        return;
+      }
+      document.getElementById('roulette-modal').classList.remove('hidden');
+      spinRoulette();
+    }
+
+    function spinRoulette() {
+      const collectionFilms = orders.filter(o => (o.category || 'orders') === 'collection');
+      const randomFilm = collectionFilms[Math.floor(Math.random() * collectionFilms.length)];
+      
+      const img = document.getElementById('roulette-img');
+      const title = document.getElementById('roulette-title');
+      
+      title.innerText = randomFilm.title;
+      if (randomFilm.imageUrl) {
+        img.src = randomFilm.imageUrl;
+        img.classList.remove('hidden');
+        document.getElementById('roulette-placeholder').classList.add('hidden');
+      } else {
+        img.classList.add('hidden');
+        document.getElementById('roulette-placeholder').classList.remove('hidden');
+      }
+    }
+
+    function openModal(id = null) {
+      const modal = document.getElementById('modal');
+      const form = document.getElementById('order-form');
+      const modalTitle = document.getElementById('modal-title');
+      const itemId = document.getElementById('item-id');
+
+      if (!modal || !form) return;
+
+      modal.classList.remove('hidden');
+      form.reset();
+      itemId.value = '';
+      document.getElementById('duplicate-warning').classList.add('hidden');
+      updatePreview('');
+
+      if (id) {
+        const item = orders.find(o => o.id === id);
+        if (item) {
+          if(modalTitle) modalTitle.innerText = "MODIFIER LA FICHE FILM";
+          itemId.value = item.id;
+          document.getElementById('title').value = item.title || '';
+          document.getElementById('genre').value = item.genre || '';
+          document.getElementById('saga').value = item.saga || '';
+          document.getElementById('year').value = item.year || '';
+          document.getElementById('image-url').value = item.imageUrl || '';
+          document.getElementById('director').value = item.director || '';
+          document.getElementById('actors').value = item.actors || '';
+          document.getElementById('synopsis').value = item.synopsis || '';
+          document.getElementById('rating').value = item.rating || 0;
+          document.getElementById('loaned-to').value = item.loanedTo || '';
+          document.getElementById('format').value = item.format || 'Steelbook 4K';
+          document.getElementById('merchant').value = item.merchant || 'Fnac';
+          document.getElementById('price').value = item.price || '';
+          document.getElementById('release-date').value = item.releaseDate || '';
+          document.getElementById('status').value = item.status || (currentTab === 'cinema' ? 'À voir au Cinéma' : 'Précommandé (Débit à venir)');
+          updatePreview(item.imageUrl || '');
+        }
+      } else {
+        if(modalTitle) modalTitle.innerText = currentTab === 'cinema' ? "NOUVELLE SORTIE CINÉMA" : "CRÉER UNE FICHE FILM";
+        if (currentTab === 'cinema') {
+          document.getElementById('status').value = 'À voir au Cinéma';
+          document.getElementById('format').value = 'Place Cinéma';
+          document.getElementById('merchant').value = 'Cinéma local';
+        } else if (currentTab === 'collection') {
+          document.getElementById('status').value = 'Possédé / Dans la collection';
+        }
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    function openDetailModal(id) {
+      const item = orders.find(o => o.id === id);
+      if (!item) return;
+
+      document.getElementById('detail-title').innerText = item.title || 'Sans titre';
+      document.getElementById('detail-year').innerText = item.year ? item.year : 'N/C';
+      document.getElementById('detail-saga').innerText = item.saga ? `SAGA : ${item.saga.toUpperCase()}` : '';
+      document.getElementById('detail-genre').innerText = item.genre ? `GENRE : ${item.genre.toUpperCase()}` : '';
+      document.getElementById('detail-director').innerText = item.director || 'Non renseigné';
+      document.getElementById('detail-actors').innerText = item.actors || 'Non renseigné';
+      document.getElementById('detail-synopsis').innerText = item.synopsis || 'Aucun synopsis renseigné.';
+      document.getElementById('detail-img').src = item.imageUrl || '';
+
+      const ratingBox = document.getElementById('detail-rating');
+      const stars = parseInt(item.rating || 0);
+      ratingBox.innerText = stars > 0 ? '★'.repeat(stars) + '☆'.repeat(5 - stars) : '';
+
+      const loanBox = document.getElementById('detail-loan');
+      if (item.loanedTo) {
+        loanBox.innerText = `⚠️ PRÊTÉ À : ${item.loanedTo}`;
+        loanBox.classList.remove('hidden');
+      } else {
+        loanBox.classList.add('hidden');
+      }
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    function saveOrder(event) {
+      event.preventDefault();
+      const id = document.getElementById('item-id').value || Date.now().toString();
+      const category = currentTab;
+      const title = document.getElementById('title').value;
+      const genre = document.getElementById('genre').value.trim();
+      const saga = document.getElementById('saga').value.trim();
+      const year = document.getElementById('year').value;
+      const imageUrl = document.getElementById('image-url').value;
+      const director = document.getElementById('director').value;
+      const actors = document.getElementById('actors').value;
+      const synopsis = document.getElementById('synopsis').value;
+      const rating = parseInt(document.getElementById('rating').value || 0);
+      const loanedTo = document.getElementById('loaned-to').value;
+      const format = document.getElementById('format').value;
+      const merchant = document.getElementById('merchant').value;
+      const price = parseFloat(document.getElementById('price').value || 0);
+      const releaseDate = document.getElementById('release-date').value;
+      const status = document.getElementById('status').value;
+
+      const orderData = { id, category, title, genre, saga, year, imageUrl, director, actors, synopsis, rating, loanedTo, format, merchant, price, releaseDate, status };
+      
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx > -1) { orders[idx] = orderData; } else { orders.unshift(orderData); }
+
+      saveToStorage();
+      closeModal();
+    }
+
+    function deleteOrder(id) {
+      if (confirm('Voulez-vous supprimer cette fiche film ?')) {
+        orders = orders.filter(o => o.id !== id);
+        saveToStorage();
+      }
+    }
+
+    function startCountdowns() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      
+      const updateTimers = () => {
+        const timerElements = document.querySelectorAll('.cinema-countdown-timer');
+        const now = new Date().getTime();
+
+        timerElements.forEach(el => {
+          const targetDate = new Date(el.dataset.date).getTime();
+          const distance = targetDate - now;
+
+          if (distance < 0) {
+            el.innerHTML = `<span class="text-emerald-400 font-retro font-bold text-xs tracking-wider">C'EST SORTI EN SALLE ! 🎉</span>`;
+          } else {
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            el.innerHTML = `
+              <div class="flex items-center gap-1 font-retro font-extrabold text-neon-pink text-xs tracking-wider">
+                <span class="bg-black/80 px-1.5 py-0.5 rounded border border-pink-500/40">${days}j</span>
+                <span>:</span>
+                <span class="bg-black/80 px-1.5 py-0.5 rounded border border-pink-500/40">${hours.toString().padStart(2, '0')}h</span>
+                <span>:</span>
+                <span class="bg-black/80 px-1.5 py-0.5 rounded border border-pink-500/40">${minutes.toString().padStart(2, '0')}m</span>
+                <span>:</span>
+                <span class="bg-black/80 px-1.5 py-0.5 rounded border border-pink-500/40 text-neon-cyan">${seconds.toString().padStart(2, '0')}s</span>
+              </div>
+            `;
+          }
+        });
+      };
+
+      updateTimers();
+      countdownInterval = setInterval(updateTimers, 1000);
+    }
+
+    function render() {
+      let filteredOrders = orders.filter(o => (o.category || 'orders') === currentTab);
+
+      const searchQuery = document.getElementById('internal-search-input') ? document.getElementById('internal-search-input').value.toLowerCase().trim() : '';
+      if (searchQuery) {
+        filteredOrders = filteredOrders.filter(o => 
+          (o.title && o.title.toLowerCase().includes(searchQuery)) ||
+          (o.genre && o.genre.toLowerCase().includes(searchQuery)) ||
+          (o.saga && o.saga.toLowerCase().includes(searchQuery)) ||
+          (o.director && o.director.toLowerCase().includes(searchQuery)) ||
+          (o.actors && o.actors.toLowerCase().includes(searchQuery))
+        );
+      }
+
+      if (currentFormatFilter !== 'ALL') {
+        filteredOrders = filteredOrders.filter(o => o.format && o.format.toLowerCase().includes(currentFormatFilter.toLowerCase()));
+      }
+
+      const sortOrder = document.getElementById('sort-order') ? document.getElementById('sort-order').value : 'default';
+      if (sortOrder === 'alpha') {
+        filteredOrders.sort((a, b) => a.title.localeCompare(b.title, 'fr', { numeric: true }));
+      } else if (sortOrder === 'year') {
+        filteredOrders.sort((a, b) => new Date(a.releaseDate || 0) - new Date(b.releaseDate || 0));
+      } else if (sortOrder === 'rating') {
+        filteredOrders.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      }
+
+      const statTotalCount = document.getElementById('stat-total-count');
+      const statNextRelease = document.getElementById('stat-next-release');
+      const statTotalDebit = document.getElementById('stat-total-debit');
+      const statDebitBox = document.getElementById('stat-debit-box');
+      const statLabelCount = document.getElementById('stat-label-count');
+      const statLabelLeft = document.getElementById('stat-label-left');
+      const container = document.getElementById('items-container');
+      const emptyState = document.getElementById('empty-state');
+
+      if (!statTotalCount || !container || !emptyState) return;
+
+      statTotalCount.innerText = filteredOrders.length;
+      if (statLabelCount) {
+        statLabelCount.innerText = currentTab === 'orders' ? 'Articles en cours' : (currentTab === 'cinema' ? 'Films à l\'affiche' : (currentTab === 'collection' ? 'Total Collection' : 'Articles Wishlist'));
+      }
+
+      if (currentTab === 'orders') {
+        if (statDebitBox) statDebitBox.classList.remove('hidden');
+        const pendingDebits = filteredOrders
+          .filter(o => o.status !== 'Expédié / Payé')
+          .reduce((sum, o) => sum + (o.price || 0), 0);
+        if (statTotalDebit) statTotalDebit.innerText = `${pendingDebits.toFixed(2)} €`;
+
+        if (statLabelLeft) statLabelLeft.innerText = "Prochaine Sortie";
+        const activeOrders = filteredOrders.filter(o => o.releaseDate);
+        activeOrders.sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
+        if (activeOrders.length > 0 && statNextRelease) {
+          const next = activeOrders[0];
+          const diffTime = new Date(next.releaseDate) - new Date();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          statNextRelease.innerText = diffDays > 0 ? `${diffDays}j (${next.title})` : (diffDays === 0 ? "Aujourd'hui !" : "Sorti");
+        } else if (statNextRelease) { statNextRelease.innerText = "Aucune date"; }
+      } else {
+        if (statDebitBox) statDebitBox.classList.add('hidden');
+        if (statLabelLeft) statLabelLeft.innerText = "Prochain Film";
+        if (currentTab === 'cinema') {
+          const sortedCinema = [...filteredOrders].sort((a,b) => new Date(a.releaseDate || 0) - new Date(b.releaseDate || 0));
+          if (sortedCinema.length > 0 && statNextRelease) {
+            statNextRelease.innerText = sortedCinema[0].title;
+          } else if (statNextRelease) { statNextRelease.innerText = "Aucun film"; }
+        } else {
+          if (statNextRelease) statNextRelease.innerText = "Mode Grille";
+        }
+      }
+
+      if (filteredOrders.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      if (currentTab === 'cinema') {
+        container.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6";
+        container.innerHTML = filteredOrders.map(item => `
+          <div class="bg-[#0c0a14]/90 border border-amber-500/40 rounded-3xl p-4 shadow-2xl hover:border-amber-400 transition-all flex flex-col justify-between group">
+            <div class="relative aspect-square bg-black rounded-2xl overflow-hidden shadow-inner cursor-pointer" onclick="openDetailModal('${item.id}')">
+              ${item.imageUrl 
+                ? `<img src="${item.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">`
+                : `<div class="w-full h-full flex items-center justify-center bg-purple-950/40"><i class="fa-solid fa-ticket text-amber-400 text-4xl"></i></div>`
+              }
+              <div class="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md border border-pink-500/50 p-2.5 rounded-xl shadow-lg flex flex-col items-center justify-center">
+                <p class="text-[9px] font-retro font-bold text-amber-300 uppercase tracking-widest mb-1">COMPTE À REBOURS</p>
+                <div class="cinema-countdown-timer" data-date="${item.releaseDate || ''}">Calcul...</div>
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-col justify-between flex-1">
+              <div>
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  ${item.genre ? `<span class="text-[10px] font-retro font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">${item.genre}</span>` : ''}
+                  <span class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar text-neon-pink"></i> ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
+                </div>
+                <h4 class="font-bold text-base text-white truncate hover:text-amber-300 cursor-pointer" onclick="openDetailModal('${item.id}')">${item.title}</h4>
+              </div>
+
+              <div class="flex justify-end items-center mt-3 pt-2 border-t border-purple-900/40 gap-2">
+                <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        startCountdowns();
+
+      } else if (currentTab === 'collection') {
+        container.className = "space-y-8";
+
+        const sagasMap = {};
+        const standaloneFilms = [];
+
+        filteredOrders.forEach(item => {
+          if (item.saga && item.saga.trim() !== '') {
+            const key = item.saga.trim();
+            if (!sagasMap[key]) sagasMap[key] = [];
+            sagasMap[key].push(item);
+          } else {
+            standaloneFilms.push(item);
+          }
+        });
+
+        let htmlContent = '';
+
+        Object.keys(sagasMap).sort().forEach(sagaName => {
+          const films = sagasMap[sagaName];
+          if(sortOrder === 'default') films.sort((a, b) => (a.year || 0) - (b.year || 0));
+
+          htmlContent += `
+            <div class="space-y-3">
+              <div class="flex items-center gap-2 border-b border-pink-500/30 pb-2">
+                <i class="fa-solid fa-layer-group text-neon-pink"></i>
+                <h3 class="font-retro font-bold text-sm text-white uppercase tracking-wider">${sagaName} (${films.length})</h3>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                ${films.map(item => renderCollectionCard(item)).join('')}
+              </div>
+            </div>
+          `;
+        });
+
+        if (standaloneFilms.length > 0) {
+          htmlContent += `
+            <div class="space-y-3">
+              <div class="flex items-center gap-2 border-b border-cyan-500/30 pb-2">
+                <i class="fa-solid fa-film text-neon-cyan"></i>
+                <h3 class="font-retro font-bold text-sm text-white uppercase tracking-wider">Films Indépendants (${standaloneFilms.length})</h3>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                ${standaloneFilms.map(item => renderCollectionCard(item)).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        container.innerHTML = htmlContent;
+
+      } else {
+        container.className = "space-y-3";
+        container.innerHTML = filteredOrders.map(item => `
+          <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-4 flex items-center justify-between gap-4 shadow-lg hover:border-pink-500/50 transition-all">
+            <div class="w-14 h-14 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40 cursor-pointer" onclick="openDetailModal('${item.id}')">
+              ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-compact-disc text-neon-pink text-xl"></i>`}
+            </div>
+            <div class="flex-1 min-w-0 cursor-pointer" onclick="openDetailModal('${item.id}')">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[10px] font-retro font-bold text-neon-cyan bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">${item.merchant || 'Fnac'}</span>
+                <span class="text-[10px] font-retro font-bold text-pink-300">${item.format || 'Standard'}</span>
+                ${item.saga ? `<span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-500/30 truncate">${item.saga}</span>` : ''}
+              </div>
+              <h4 class="font-bold text-sm text-white truncate" title="${item.title}">${item.title}</h4>
+              <p class="text-xs text-slate-400 flex items-center gap-2 mt-1 font-medium">
+                <i class="fa-regular fa-calendar text-neon-pink"></i> 
+                <span class="text-slate-200 font-semibold">${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
+                <span class="text-slate-600">•</span>
+                <span class="text-emerald-400 font-bold">${(item.price || 0).toFixed(2)} €</span>
+              </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-2.5 text-xs cursor-pointer"><i class="fa-solid fa-pen text-sm"></i></button>
+              <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-2.5 text-xs cursor-pointer"><i class="fa-solid fa-trash text-sm"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderCollectionCard(item) {
+      const stars = parseInt(item.rating || 0);
+      return `
+        <div class="bg-[#0c0a14]/90 border border-emerald-500/30 rounded-xl overflow-hidden shadow-xl hover:border-emerald-400 transition-all flex flex-col justify-between group">
+          <div class="relative aspect-[2/3] bg-black overflow-hidden cursor-pointer" onclick="openDetailModal('${item.id}')">
+            ${item.imageUrl 
+              ? `<img src="${item.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">`
+              : `<div class="w-full h-full flex items-center justify-center bg-purple-950/40"><i class="fa-solid fa-compact-disc text-emerald-400 text-3xl"></i></div>`
+            }
+            ${item.year ? `<span class="absolute top-2 right-2 bg-black/80 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/40">${item.year}</span>` : ''}
+            ${item.loanedTo ? `<span class="absolute bottom-2 left-2 bg-pink-950/90 text-pink-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-pink-500"><i class="fa-solid fa-hand-holding"></i> Prêté</span>` : ''}
+          </div>
+          <div class="p-3 flex flex-col justify-between flex-1">
+            <div>
+              <h4 class="font-bold text-xs text-white line-clamp-2 cursor-pointer hover:text-emerald-300" onclick="openDetailModal('${item.id}')">${item.title}</h4>
+              ${stars > 0 ? `<div class="text-amber-400 text-[10px] mt-1">${'★'.repeat(stars)}</div>` : ''}
+            </div>
+            <div class="flex justify-between items-center mt-3 pt-2 border-t border-purple-900/40">
+              <span class="text-[10px] font-bold text-slate-400 truncate max-w-[70px]">${item.format || ''}</span>
+              <div class="flex items-center gap-1">
+                <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-emerald-300 p-1 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-1 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBudgetStats() {
+      const collectionFilms = orders.filter(o => o.category === 'collection');
+      const totalVal = collectionFilms.reduce((sum, o) => sum + (o.price || 0), 0);
+      document.getElementById('stats-total-val').innerText = `${totalVal.toFixed(2)} €`;
+
+      const sagaCounts = {};
+      collectionFilms.forEach(o => {
+        if(o.saga) sagaCounts[o.saga] = (sagaCounts[o.saga] || 0) + 1;
+      });
+      let topSaga = '-';
+      let maxCount = 0;
+      Object.keys(sagaCounts).forEach(s => {
+        if(sagaCounts[s] > maxCount) { maxCount = sagaCounts[s]; topSaga = s; }
+      });
+      document.getElementById('stats-top-saga').innerText = topSaga;
+      document.getElementById('stats-top-saga-count').innerText = `${maxCount} film(s)`;
+
+      const merchantMap = {};
+      orders.forEach(o => {
+        const m = o.merchant || 'Autre';
+        merchantMap[m] = (merchantMap[m] || 0) + (o.price || 0);
+      });
+
+      const container = document.getElementById('budget-by-merchant-container');
+      container.innerHTML = Object.keys(merchantMap).map(m => `
+        <div class="flex justify-between items-center p-3 bg-black/60 rounded-lg border border-purple-900/40">
+          <span class="font-bold text-xs text-white">${m}</span>
+          <span class="font-retro font-bold text-xs text-emerald-400">${merchantMap[m].toFixed(2)} €</span>
+        </div>
+      `).join('');
+    }
+
+    render();
+    checkWelcomeAlert();
+  </script>
+</body>
+</html>
