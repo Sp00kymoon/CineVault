@@ -124,8 +124,8 @@
         <i class="fa-solid fa-heart text-neon-cyan w-5"></i> Wishlist / Intéressants
       </button>
 
-      <button onclick="switchTab('budget')" id="nav-budget" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
-        <i class="fa-solid fa-wallet text-purple-400 w-5"></i> Budget & Stats
+      <button onclick="switchTab('bilan')" id="nav-bilan" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
+        <i class="fa-solid fa-calendar-days text-purple-400 w-5"></i> Bilan Annuel & Archives
       </button>
 
       <div class="pt-4 mt-4 border-t border-purple-900/40 space-y-2">
@@ -237,27 +237,65 @@
       </div>
     </div>
 
-    <!-- STATISTIQUES BUDGET & ANALYTICS -->
-    <div id="view-budget" class="hidden space-y-4 max-w-3xl mx-auto">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-5 rounded-2xl">
-          <p class="text-xs font-retro font-bold text-emerald-400 mb-1 uppercase">VALEUR DE LA COLLECTION</p>
-          <p id="stats-total-val" class="text-3xl font-retro font-black text-white">0.00 €</p>
-          <span class="text-[10px] text-slate-400">Total estimé de vos films possédés</span>
+    <!-- VUE BILAN ANNUEL & ARCHIVES -->
+    <div id="view-bilan" class="hidden space-y-6 max-w-4xl mx-auto">
+      
+      <!-- SÉLECTEUR D'ANNÉE -->
+      <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-4 rounded-2xl flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-calendar-days text-purple-400 text-lg"></i>
+          <span class="font-retro font-bold text-sm text-white uppercase tracking-wider">Année du Bilan :</span>
         </div>
-        <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-5 rounded-2xl">
-          <p class="text-xs font-retro font-bold text-amber-400 mb-1 uppercase">SAGA LA PLUS REPRÉSENTÉE</p>
-          <p id="stats-top-saga" class="text-xl font-retro font-black text-white truncate">-</p>
-          <span class="text-[10px] text-slate-400" id="stats-top-saga-count">0 film(s)</span>
+        <select id="bilan-year-select" onchange="renderBilan()" class="bg-[#000000] border border-purple-900 text-sm font-retro font-bold text-neon-cyan rounded-lg px-4 py-2 focus:outline-none focus:border-neon-cyan cursor-pointer">
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+          <option value="2027">2027</option>
+        </select>
+      </div>
+
+      <!-- CARTES RÉCAPITULATIVES DE L'ANNÉE -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-[#0c0a14]/90 border border-amber-500/30 p-5 rounded-2xl flex flex-col justify-between">
+          <p class="text-xs font-retro font-bold text-amber-400 mb-1 uppercase">DÉPENSES GLOBALES</p>
+          <p id="bilan-total-spent" class="text-2xl sm:text-3xl font-retro font-black text-white">0.00 €</p>
+          <span class="text-[10px] text-slate-400 mt-1">Précommandes + Achats + Séances ciné</span>
+        </div>
+        <div class="bg-[#0c0a14]/90 border border-emerald-500/30 p-5 rounded-2xl flex flex-col justify-between">
+          <p class="text-xs font-retro font-bold text-emerald-400 mb-1 uppercase">FILMS COLLECTIONNÉS</p>
+          <p id="bilan-total-collection" class="text-2xl sm:text-3xl font-retro font-black text-white">0</p>
+          <span class="text-[10px] text-slate-400 mt-1">Ajoutés ou achetés cette année</span>
+        </div>
+        <div class="bg-[#0c0a14]/90 border border-pink-500/30 p-5 rounded-2xl flex flex-col justify-between">
+          <p class="text-xs font-retro font-bold text-pink-400 mb-1 uppercase">SÉANCES DE CINÉMA</p>
+          <p id="bilan-total-cinema" class="text-2xl sm:text-3xl font-retro font-black text-white">0</p>
+          <span class="text-[10px] text-slate-400 mt-1">Films vus en salle</span>
         </div>
       </div>
 
-      <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-6 rounded-2xl shadow-xl">
-        <h3 class="font-retro font-bold text-sm text-neon-cyan mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-chart-pie"></i> RÉPARTITION DES DÉPENSES PAR MARCHAND
+      <!-- DÉTAIL DES ACHATS / COLLECTION DE L'ANNÉE -->
+      <div class="bg-[#0c0a14]/60 border border-purple-900/50 rounded-2xl p-5 space-y-3">
+        <h3 class="font-retro font-bold text-xs text-emerald-400 tracking-wider flex items-center gap-2 border-b border-purple-900/40 pb-2">
+          <i class="fa-solid fa-box-archive"></i> Films ajoutés / achetés dans l'année
         </h3>
-        <div id="budget-by-merchant-container" class="space-y-3"></div>
+        <div id="bilan-collection-list" class="space-y-2"></div>
       </div>
+
+      <!-- DÉTAIL DES PRÉCOMMANDES / RÉCEPTIONS DE L'ANNÉE -->
+      <div class="bg-[#0c0a14]/60 border border-purple-900/50 rounded-2xl p-5 space-y-3">
+        <h3 class="font-retro font-bold text-xs text-neon-pink tracking-wider flex items-center gap-2 border-b border-purple-900/40 pb-2">
+          <i class="fa-solid fa-film"></i> Précommandes et commandes web de l'année
+        </h3>
+        <div id="bilan-orders-list" class="space-y-2"></div>
+      </div>
+
+      <!-- DÉTAIL DES SÉANCES CINÉ DE L'ANNÉE -->
+      <div class="bg-[#0c0a14]/60 border border-purple-900/50 rounded-2xl p-5 space-y-3">
+        <h3 class="font-retro font-bold text-xs text-amber-400 tracking-wider flex items-center gap-2 border-b border-purple-900/40 pb-2">
+          <i class="fa-solid fa-ticket"></i> Séances de cinéma de l'année
+        </h3>
+        <div id="bilan-cinema-list" class="space-y-2"></div>
+      </div>
+
     </div>
 
   </main>
@@ -389,6 +427,7 @@
                 <option value="E.Leclerc">E.Leclerc</option>
                 <option value="Zavvi">Zavvi</option>
                 <option value="Cultura">Cultura</option>
+                <option value="Magasin / Achat direct">Magasin / Achat direct</option>
                 <option value="Cinéma local">Cinéma local / UGC / Pathé</option>
                 <option value="Autre">Autre</option>
               </select>
@@ -591,7 +630,7 @@
 
       if (countdownInterval) clearInterval(countdownInterval);
 
-      ['orders', 'cinema', 'collection', 'wishlist', 'budget'].forEach(t => {
+      ['orders', 'cinema', 'collection', 'wishlist', 'bilan'].forEach(t => {
         const btn = document.getElementById(`nav-${t}`);
         if(btn) {
           if(t === tab) {
@@ -603,19 +642,19 @@
       });
 
       const viewItems = document.getElementById('view-items');
-      const viewBudget = document.getElementById('view-budget');
+      const viewBilan = document.getElementById('view-bilan');
       const pageTitle = document.getElementById('page-title');
       const btnAddText = document.getElementById('btn-add-text');
       const searchContainer = document.getElementById('search-bar-container');
 
-      if (tab === 'budget') {
+      if (tab === 'bilan') {
         if(viewItems) viewItems.classList.add('hidden');
-        if(viewBudget) viewBudget.classList.remove('hidden');
-        if(pageTitle) pageTitle.innerText = "BUDGET & STATS";
-        renderBudgetStats();
+        if(viewBilan) viewBilan.classList.remove('hidden');
+        if(pageTitle) pageTitle.innerText = "BILAN ANNUEL & ARCHIVES";
+        renderBilan();
       } else {
         if(viewItems) viewItems.classList.remove('hidden');
-        if(viewBudget) viewBudget.classList.add('hidden');
+        if(viewBilan) viewBilan.classList.add('hidden');
         if(pageTitle) {
           pageTitle.innerText = tab === 'orders' ? "MES PRÉCOMMANDES" : (tab === 'cinema' ? "PROCHAINEMENT AU CINÉMA 🍿" : (tab === 'collection' ? "MA COLLECTION" : "WISHLIST"));
         }
@@ -654,7 +693,7 @@
         document.getElementById('roulette-placeholder').classList.add('hidden');
       } else {
         img.classList.add('hidden');
-        document.getElementById('roulette-placeholder').classList.remove('hidden');
+        document.getElementById('roulette-placeholder').classList.add('hidden');
       }
     }
 
@@ -739,14 +778,14 @@
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
         lblPrice.innerText = "PRIX TOTAL (€)";
-        wrpStatus.classList.add('hidden');
+        wrpStatus.classList.remove('hidden');
       } else {
         grpClass.classList.remove('hidden');
         wrpSaga.classList.remove('hidden');
         grpImg.classList.remove('hidden');
         grpDates.classList.remove('hidden');
         wrpReleaseDate.classList.remove('hidden');
-        lblReleaseDate.innerText = "DATE DE SORTIE / ACHAT";
+        lblReleaseDate.innerText = "DATE D'ACHAT / AJOUT *";
         wrpYear.classList.remove('hidden');
         grpCredits.classList.remove('hidden');
         grpSynopsis.classList.remove('hidden');
@@ -757,7 +796,7 @@
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
         lblPrice.innerText = "PRIX D'ACHAT (€)";
-        wrpStatus.classList.add('hidden');
+        wrpStatus.classList.remove('hidden');
       }
 
       if (id) {
@@ -793,6 +832,7 @@
           document.getElementById('merchant').value = 'Amazon';
         } else if (currentTab === 'collection') {
           document.getElementById('status').value = 'Possédé / Dans la collection';
+          document.getElementById('merchant').value = 'Magasin / Achat direct';
         }
       }
     }
@@ -896,13 +936,11 @@
         const now = new Date().getTime();
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
-        // 1. Total Général des précommandes en cours
         const totalGeneralOrders = filteredOrders
           .filter(o => o.status !== 'Réceptionné')
           .reduce((sum, o) => sum + (o.price || 0), 0);
         if (statTotalDebit) statTotalDebit.innerText = `${totalGeneralOrders.toFixed(2)} €`;
 
-        // 2. Prochains débits (- 7 jours)
         const nextDebitsWeek = filteredOrders
           .filter(o => o.status !== 'Réceptionné' && o.releaseDate)
           .filter(o => {
@@ -912,7 +950,6 @@
           .reduce((sum, o) => sum + (o.price || 0), 0);
         if (statNextDebitWeek) statNextDebitWeek.innerText = `${nextDebitsWeek.toFixed(2)} €`;
 
-        // 3. Prochaine Sortie
         if (statLabelLeft) statLabelLeft.innerText = "Prochaine Sortie";
         const activeOrders = filteredOrders.filter(o => o.releaseDate && o.status !== 'Réceptionné');
         activeOrders.sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
@@ -922,7 +959,6 @@
           statNextRelease.innerText = diffDays > 0 ? `${diffDays}j (${next.title})` : "Aujourd'hui !";
         } else if (statNextRelease) { statNextRelease.innerText = "Aucune date"; }
 
-        // 4. Articles en attente
         if (statLabelCount) statLabelCount.innerText = "En attente";
         statTotalCount.innerText = filteredOrders.filter(o => o.status !== 'Réceptionné').length;
 
@@ -1235,36 +1271,87 @@
       `;
     }
 
-    function renderBudgetStats() {
-      const collectionFilms = orders.filter(o => o.category === 'collection');
-      const totalVal = collectionFilms.reduce((sum, o) => sum + (o.price || 0), 0);
-      document.getElementById('stats-total-val').innerText = `${totalVal.toFixed(2)} €`;
+    function renderBilan() {
+      const selectedYear = document.getElementById('bilan-year-select').value;
 
-      const sagaCounts = {};
-      collectionFilms.forEach(o => {
-        if(o.saga) sagaCounts[o.saga] = (sagaCounts[o.saga] || 0) + 1;
-      });
-      let topSaga = '-';
-      let maxCount = 0;
-      Object.keys(sagaCounts).forEach(s => {
-        if(sagaCounts[s] > maxCount) { maxCount = sagaCounts[s]; topSaga = s; }
-      });
-      document.getElementById('stats-top-saga').innerText = topSaga;
-      document.getElementById('stats-top-saga-count').innerText = `${maxCount} film(s)`;
+      // 1. Films collectionnés cette année (basé sur la date d'achat/sortie ou releaseDate)
+      const collectionFilms = orders.filter(o => o.category === 'collection' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
+      
+      // 2. Précommandes / commandes web de l'année
+      const yearOrders = orders.filter(o => o.category === 'orders' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
 
-      const merchantMap = {};
-      orders.forEach(o => {
-        const m = o.merchant || 'Autre';
-        merchantMap[m] = (merchantMap[m] || 0) + (o.price || 0);
-      });
+      // 3. Séances de cinéma de l'année (films vus en salle)
+      const yearCinema = orders.filter(o => o.category === 'cinema' && o.status === 'Film Vu' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
 
-      const container = document.getElementById('budget-by-merchant-container');
-      container.innerHTML = Object.keys(merchantMap).map(m => `
-        <div class="flex justify-between items-center p-3 bg-black/60 rounded-lg border border-purple-900/40">
-          <span class="font-bold text-xs text-white">${m}</span>
-          <span class="font-retro font-bold text-xs text-emerald-400">${merchantMap[m].toFixed(2)} €</span>
-        </div>
-      `).join('');
+      // Calcul des dépenses totales de l'année
+      const spentCollection = collectionFilms.reduce((sum, o) => sum + (o.price || 0), 0);
+      const spentOrders = yearOrders.reduce((sum, o) => sum + (o.price || 0), 0);
+      const spentCinema = yearCinema.reduce((sum, o) => sum + (o.price || 0), 0);
+      const totalSpentYear = spentCollection + spentOrders + spentCinema;
+
+      document.getElementById('bilan-total-spent').innerText = `${totalSpentYear.toFixed(2)} €`;
+      document.getElementById('bilan-total-collection').innerText = collectionFilms.length;
+      document.getElementById('bilan-total-cinema').innerText = yearCinema.length;
+
+      // Rendu de la liste Collection
+      const colContainer = document.getElementById('bilan-collection-list');
+      if (collectionFilms.length === 0) {
+        colContainer.innerHTML = `<p class="text-xs text-slate-500 italic">Aucun film ajouté en ${selectedYear}.</p>`;
+      } else {
+        colContainer.innerHTML = collectionFilms.map(item => `
+          <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
+                ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-box text-emerald-400 text-sm"></i>`}
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                <span class="text-[10px] text-slate-400">${item.format || 'Standard'} • ${item.merchant || 'Magasin'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Rendu de la liste Précommandes
+      const ordContainer = document.getElementById('bilan-orders-list');
+      if (yearOrders.length === 0) {
+        ordContainer.innerHTML = `<p class="text-xs text-slate-500 italic">Aucune précommande en ${selectedYear}.</p>`;
+      } else {
+        ordContainer.innerHTML = yearOrders.map(item => `
+          <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
+                ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-film text-neon-pink text-sm"></i>`}
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                <span class="text-[10px] text-slate-400">${item.merchant || 'Amazon'} • <strong class="text-pink-400">${item.status}</strong> • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Rendu de la liste Cinéma
+      const cinContainer = document.getElementById('bilan-cinema-list');
+      if (yearCinema.length === 0) {
+        cinContainer.innerHTML = `<p class="text-xs text-slate-500 italic">Aucune séance enregistrée en ${selectedYear}.</p>`;
+      } else {
+        cinContainer.innerHTML = yearCinema.map(item => `
+          <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
+                ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-ticket text-amber-400 text-sm"></i>`}
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                <span class="text-[10px] text-slate-400">Vu le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="text-amber-400">${(item.price || 0).toFixed(2)} €</strong></span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
     }
 
     render();
