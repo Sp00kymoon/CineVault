@@ -188,19 +188,23 @@
 
     <div id="view-items">
       
-      <!-- STATISTIQUES & METRICS -->
-      <div id="stats-box" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <!-- STATISTIQUES & METRICS (4 CARRÉS POUR LES PRÉCOMMANDES) -->
+      <div id="stats-box" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-pink-500/30 neon-box-pink backdrop-blur-sm flex flex-col justify-between">
-          <p class="text-xs font-bold tracking-widest text-pink-300 uppercase" id="stat-label-left">Prochaine Sortie</p>
-          <div id="stat-next-release" class="text-base font-retro font-bold text-white mt-1 truncate">Aucune</div>
+          <p class="text-[10px] sm:text-xs font-bold tracking-widest text-pink-300 uppercase" id="stat-label-left">Prochaine Sortie</p>
+          <div id="stat-next-release" class="text-sm sm:text-base font-retro font-bold text-white mt-1 truncate">Aucune</div>
         </div>
-        <div id="stat-debit-box" class="bg-[#0c0a14]/90 p-4 rounded-xl border border-amber-500/30 backdrop-blur-sm flex flex-col justify-between">
-          <p class="text-xs font-bold tracking-widest text-amber-300 uppercase" id="stat-label-center">Débits sous 7j</p>
-          <p id="stat-total-debit" class="text-2xl font-retro font-black text-amber-400 mt-1">0.00 €</p>
+        <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-amber-500/30 backdrop-blur-sm flex flex-col justify-between">
+          <p class="text-[10px] sm:text-xs font-bold tracking-widest text-amber-300 uppercase" id="stat-label-center">Total Dépense</p>
+          <p id="stat-total-debit" class="text-xl sm:text-2xl font-retro font-black text-amber-400 mt-1">0.00 €</p>
+        </div>
+        <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-purple-500/30 backdrop-blur-sm flex flex-col justify-between">
+          <p class="text-[10px] sm:text-xs font-bold tracking-widest text-purple-300 uppercase">Prochain Débit (-7j)</p>
+          <p id="stat-next-debit-week" class="text-xl sm:text-2xl font-retro font-black text-purple-400 mt-1">0.00 €</p>
         </div>
         <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-cyan-500/30 neon-box-cyan backdrop-blur-sm flex flex-col justify-between">
-          <p class="text-xs font-bold tracking-widest text-cyan-300 uppercase" id="stat-label-count">Articles en cours</p>
-          <p id="stat-total-count" class="text-3xl font-retro font-black text-neon-cyan neon-text-cyan mt-1">0</p>
+          <p class="text-[10px] sm:text-xs font-bold tracking-widest text-cyan-300 uppercase" id="stat-label-count">En attente</p>
+          <p id="stat-total-count" class="text-2xl sm:text-3xl font-retro font-black text-neon-cyan neon-text-cyan mt-1">0</p>
         </div>
       </div>
 
@@ -585,7 +589,7 @@
       }
     }
 
-    // CORRECTION AFFICHAGE GENERATEUR QR CODE
+    // GENERATEUR QR CODE CORRIGÉ
     function openQrGeneratorModal() {
       const modal = document.getElementById('qr-gen-modal');
       const target = document.getElementById('qrcode-target');
@@ -598,12 +602,14 @@
         new QRCode(target, {
           text: payload,
           width: 200,
-          height: 200
+          height: 200,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
         });
-      }, 150);
+      }, 100);
     }
 
-    // CORRECTION ACCÈS CAMÉRA MOBILE SCANNER QR
     function openQrScannerModal() {
       const modal = document.getElementById('qr-scan-modal');
       modal.classList.remove('hidden');
@@ -872,7 +878,7 @@
           document.getElementById('format').value = 'Place Cinéma';
           document.getElementById('merchant').value = 'Cinéma local';
         } else if (currentTab === 'orders') {
-          document.getElementById('status').value = 'Précommandes (Débit à venir)';
+          document.getElementById('status').value = 'Précommandé (Débit à venir)';
           document.getElementById('merchant').value = 'Amazon';
         } else if (currentTab === 'collection') {
           document.getElementById('status').value = 'Possédé / Dans la collection';
@@ -964,10 +970,9 @@
       const statTotalCount = document.getElementById('stat-total-count');
       const statNextRelease = document.getElementById('stat-next-release');
       const statTotalDebit = document.getElementById('stat-total-debit');
-      const statDebitBox = document.getElementById('stat-debit-box');
+      const statNextDebitWeek = document.getElementById('stat-next-debit-week');
       const statLabelCount = document.getElementById('stat-label-count');
       const statLabelLeft = document.getElementById('stat-label-left');
-      const statLabelCenter = document.getElementById('stat-label-center');
       const container = document.getElementById('items-container');
       const emptyState = document.getElementById('empty-state');
 
@@ -975,21 +980,28 @@
 
       const currentYear = new Date().getFullYear().toString();
 
-      // LOGIQUE PRÉCOMMANDES (AVEC TOTAL GÉNÉRAL)
+      // LOGIQUE DES 4 CARRÉS POUR LES PRÉCOMMANDES
       if (currentTab === 'orders') {
-        if (statDebitBox) statDebitBox.classList.remove('hidden');
-        if (statLabelCenter) statLabelCenter.innerText = "Total Général / Débits";
-
         const now = new Date().getTime();
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
-        // Calcul du total général de toutes les précommandes non réceptionnées
+        // 1. Total Général des précommandes en cours
         const totalGeneralOrders = filteredOrders
           .filter(o => o.status !== 'Réceptionné')
           .reduce((sum, o) => sum + (o.price || 0), 0);
-
         if (statTotalDebit) statTotalDebit.innerText = `${totalGeneralOrders.toFixed(2)} €`;
 
+        // 2. Prochains débits (- 7 jours)
+        const nextDebitsWeek = filteredOrders
+          .filter(o => o.status !== 'Réceptionné' && o.releaseDate)
+          .filter(o => {
+            const release = new Date(o.releaseDate).getTime();
+            return (release >= now && (release - now) <= sevenDays);
+          })
+          .reduce((sum, o) => sum + (o.price || 0), 0);
+        if (statNextDebitWeek) statNextDebitWeek.innerText = `${nextDebitsWeek.toFixed(2)} €`;
+
+        // 3. Prochaine Sortie
         if (statLabelLeft) statLabelLeft.innerText = "Prochaine Sortie";
         const activeOrders = filteredOrders.filter(o => o.releaseDate && o.status !== 'Réceptionné');
         activeOrders.sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
@@ -999,38 +1011,39 @@
           statNextRelease.innerText = diffDays > 0 ? `${diffDays}j (${next.title})` : "Aujourd'hui !";
         } else if (statNextRelease) { statNextRelease.innerText = "Aucune date"; }
 
+        // 4. Articles en attente
         if (statLabelCount) statLabelCount.innerText = "En attente";
         statTotalCount.innerText = filteredOrders.filter(o => o.status !== 'Réceptionné').length;
 
       } else if (currentTab === 'cinema') {
-        if (statDebitBox) statDebitBox.classList.remove('hidden');
         if (statLabelLeft) statLabelLeft.innerText = `Séances ${currentYear}`;
-        if (statLabelCenter) statLabelCenter.innerText = `Budget Ciné ${currentYear}`;
-
-        const watchedThisYear = filteredOrders.filter(o => o.status === 'Film Vu' && o.releaseDate && o.releaseDate.startsWith(currentYear));
-        if (statNextRelease) statNextRelease.innerText = `${watchedThisYear.length} film(s) vu(s)`;
-
-        const spentCine = watchedThisYear.reduce((sum, o) => sum + (o.price || 0), 0);
-        if (statTotalDebit) statTotalDebit.innerText = `${spentCine.toFixed(2)} €`;
-
+        if (statTotalDebit) {
+          const watchedThisYear = filteredOrders.filter(o => o.status === 'Film Vu' && o.releaseDate && o.releaseDate.startsWith(currentYear));
+          statTotalDebit.innerText = `${watchedThisYear.reduce((sum, o) => sum + (o.price || 0), 0).toFixed(2)} €`;
+        }
+        if (statNextDebitWeek) statNextDebitWeek.innerText = "---";
+        if (statNextRelease) {
+          const watchedThisYear = filteredOrders.filter(o => o.status === 'Film Vu' && o.releaseDate && o.releaseDate.startsWith(currentYear));
+          statNextRelease.innerText = `${watchedThisYear.length} film(s) vu(s)`;
+        }
         if (statLabelCount) statLabelCount.innerText = "Prochainement";
         statTotalCount.innerText = filteredOrders.filter(o => o.status !== 'Film Vu').length;
 
       } else if (currentTab === 'collection') {
-        if (statDebitBox) statDebitBox.classList.remove('hidden');
         if (statLabelLeft) statLabelLeft.innerText = "Note Moyenne";
-        if (statLabelCenter) statLabelCenter.innerText = "Valeur Collection";
-
-        const ratedFilms = filteredOrders.filter(o => o.rating && parseInt(o.rating) > 0);
-        if (ratedFilms.length > 0) {
-          const avgRating = ratedFilms.reduce((sum, o) => sum + parseInt(o.rating), 0) / ratedFilms.length;
-          const fullStars = Math.round(avgRating);
-          statNextRelease.innerHTML = `<span class="text-amber-400">` + '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars) + `</span> <span class="text-xs text-slate-300">(${avgRating.toFixed(1)}/5)</span>`;
-        } else { statNextRelease.innerText = "Aucune note"; }
-
-        const totalSpent = filteredOrders.reduce((sum, o) => sum + (o.price || 0), 0);
-        if (statTotalDebit) statTotalDebit.innerText = `${totalSpent.toFixed(2)} €`;
-
+        if (statTotalDebit) {
+          const totalSpent = filteredOrders.reduce((sum, o) => sum + (o.price || 0), 0);
+          statTotalDebit.innerText = `${totalSpent.toFixed(2)} €`;
+        }
+        if (statNextDebitWeek) statNextDebitWeek.innerText = "---";
+        if (statNextRelease) {
+          const ratedFilms = filteredOrders.filter(o => o.rating && parseInt(o.rating) > 0);
+          if (ratedFilms.length > 0) {
+            const avgRating = ratedFilms.reduce((sum, o) => sum + parseInt(o.rating), 0) / ratedFilms.length;
+            const fullStars = Math.round(avgRating);
+            statNextRelease.innerHTML = `<span class="text-amber-400">` + '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars) + `</span> <span class="text-xs text-slate-300">(${avgRating.toFixed(1)}/5)</span>`;
+          } else { statNextRelease.innerText = "Aucune note"; }
+        }
         if (statLabelCount) statLabelCount.innerText = "Total Collection";
         statTotalCount.innerText = filteredOrders.length;
       }
@@ -1140,7 +1153,7 @@
         container.innerHTML = htmlCinema;
         startCountdowns();
 
-      // VUE PRÉCOMMANDES (2 COLONNES PC / 4 COLONNES MOBILE)
+      // VUE PRÉCOMMANDES EN LIGNES (FORMAT INITIAL NICKEL)
       } else if (currentTab === 'orders') {
         container.className = "space-y-6";
 
@@ -1155,34 +1168,33 @@
               <h3 class="font-retro font-bold text-xs text-neon-pink uppercase tracking-wider border-b border-pink-500/30 pb-2 flex items-center gap-2">
                 <i class="fa-solid fa-box-open"></i> En attente de livraison (${pendingOrders.length})
               </h3>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                ${pendingOrders.map(item => `
-                  <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-3 flex flex-col justify-between gap-3 shadow-lg hover:border-pink-500/50 transition-all">
-                    <div class="flex items-center gap-3">
-                      <div class="w-12 h-12 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40">
-                        ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-compact-disc text-neon-pink text-lg"></i>`}
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-1 mb-0.5">
-                          <span class="text-[9px] font-retro font-bold text-neon-cyan bg-cyan-950/50 px-1.5 py-0.5 rounded border border-cyan-500/30">${item.merchant || 'Amazon'}</span>
-                        </div>
-                        <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-purple-900/40">
-                      <span class="text-slate-200 font-semibold"><i class="fa-regular fa-calendar text-neon-pink"></i> ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'}) : 'N/C'}</span>
-                      <span class="text-emerald-400 font-bold">${(item.price || 0).toFixed(2)} €</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-1 pt-1">
-                      <button onclick="markAsReceived('${item.id}')" title="Marquer comme reçu" class="flex-1 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 py-1.5 px-2 rounded text-[10px] font-bold cursor-pointer text-center">
-                        <i class="fa-solid fa-check"></i> Reçu
-                      </button>
-                      <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
-                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                    </div>
+              ${pendingOrders.map(item => `
+                <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-4 flex items-center justify-between gap-4 shadow-lg hover:border-pink-500/50 transition-all">
+                  <div class="w-14 h-14 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40">
+                    ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-compact-disc text-neon-pink text-xl"></i>`}
                   </div>
-                `).join('')}
-              </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-[10px] font-retro font-bold text-neon-cyan bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">${item.merchant || 'Amazon'}</span>
+                      <span class="text-[10px] font-retro font-bold text-pink-300">${item.format || 'Standard'}</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-white truncate">${item.title}</h4>
+                    <p class="text-xs text-slate-400 flex items-center gap-2 mt-1 font-medium">
+                      <i class="fa-regular fa-calendar text-neon-pink"></i> 
+                      <span class="text-slate-200 font-semibold">${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
+                      <span class="text-slate-600">•</span>
+                      <span class="text-emerald-400 font-bold">${(item.price || 0).toFixed(2)} €</span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="markAsReceived('${item.id}')" title="Marquer comme reçu" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 p-2 rounded-lg text-xs font-bold cursor-pointer transition-all">
+                      <i class="fa-solid fa-check text-emerald-400"></i> Reçu
+                    </button>
+                    <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-2 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </div>
+              `).join('')}
             </div>
           `;
         }
@@ -1205,21 +1217,19 @@
                   <h3 class="font-retro font-bold text-xs text-emerald-400 tracking-wider">📦 PRODUITS RÉCEPTIONNÉS EN ${yr} (${films.length} articles)</h3>
                   <span class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded border border-emerald-500/30">Total : ${totalYearSpent.toFixed(2)} €</span>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="space-y-2">
                   ${films.map(item => `
-                    <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex flex-col justify-between gap-2 opacity-75 hover:opacity-100 transition-opacity">
-                      <div class="flex items-center gap-3">
+                    <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3 opacity-75 hover:opacity-100 transition-opacity">
+                      <div class="flex items-center gap-3 min-w-0 flex-1">
                         <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
                           ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-box text-emerald-400 text-sm"></i>`}
                         </div>
-                        <div class="min-w-0 flex-1">
+                        <div class="min-w-0">
                           <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
-                          <span class="text-[9px] text-slate-400">${item.merchant || 'Fnac'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
+                          <span class="text-[10px] text-slate-400">${item.merchant || 'Fnac'} • Reçu le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
                         </div>
                       </div>
-                      <div class="flex justify-end pt-1 border-t border-purple-900/30">
-                        <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-1 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                      </div>
+                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
                     </div>
                   `).join('')}
                 </div>
