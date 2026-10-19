@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-  <!-- Librairies QR Code (Génération & Scan) -->
+  <!-- Librairies QR Code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -116,7 +116,7 @@
       </button>
 
       <button onclick="switchTab('cinema')" id="nav-cinema" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
-        <i class="fa-solid fa-ticket text-amber-400 w-5"></i> Sorties Cinéma 🍿
+        <i class="fa-solid fa-ticket text-amber-400 w-5"></i> Sorties Cinéma ⏳
       </button>
 
       <button onclick="switchTab('collection')" id="nav-collection" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
@@ -204,7 +204,7 @@
         </div>
       </div>
 
-      <!-- BARRE DE RECHERCHE ET FILTRES (RANGÉE SI COMPATIBLE) -->
+      <!-- BARRE DE RECHERCHE ET FILTRES -->
       <div id="search-bar-container" class="bg-[#0c0a14]/90 border border-purple-900/60 p-3.5 rounded-xl mb-6 space-y-3">
         <div class="relative">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
@@ -328,7 +328,7 @@
             </div>
           </div>
 
-          <!-- DATES & ANNÉE (CALENDRIER INTERACTIF) -->
+          <!-- DATES & ANNÉE -->
           <div id="field-group-dates" class="grid grid-cols-2 gap-4">
             <div id="field-wrapper-release-date">
               <label id="label-release-date" class="block text-xs font-bold text-slate-300 tracking-wider mb-1">DATE DE SORTIE *</label>
@@ -407,7 +407,7 @@
           <!-- PRIX & STATUT -->
           <div id="field-group-price-status" class="grid grid-cols-2 gap-4">
             <div id="field-wrapper-price">
-              <label id="label-price" class="block text-xs font-bold text-slate-300 tracking-wider mb-1">PRIX DE LA PLACE (€)</label>
+              <label id="label-price" class="block text-xs font-bold text-slate-300 tracking-wider mb-1">PRIX (€)</label>
               <input type="number" id="price" step="0.01" placeholder="12.00" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold">
             </div>
             <div id="field-wrapper-status">
@@ -451,6 +451,7 @@
       <h3 class="font-retro font-bold text-neon-cyan text-sm tracking-wider flex items-center justify-center gap-2">
         <i class="fa-solid fa-camera"></i> SCANNER LE QR CODE
       </h3>
+      <p class="text-xs text-slate-300">Veuillez autoriser l'accès à la caméra pour scanner.</p>
       <div id="qr-reader" class="w-full bg-black rounded-xl border border-purple-900/50 overflow-hidden"></div>
       <button onclick="closeQrScannerModal()" class="w-full bg-slate-900 text-slate-300 py-2.5 rounded-lg font-bold text-xs uppercase cursor-pointer">Annuler</button>
     </div>
@@ -584,39 +585,44 @@
       }
     }
 
-    // GESTION SYNCHRO QR CODE
+    // CORRECTION AFFICHAGE GENERATEUR QR CODE
     function openQrGeneratorModal() {
       const modal = document.getElementById('qr-gen-modal');
       const target = document.getElementById('qrcode-target');
       target.innerHTML = '';
-      
-      const payload = JSON.stringify(orders);
-      new QRCode(target, {
-        text: payload,
-        width: 220,
-        height: 220
-      });
       modal.classList.remove('hidden');
       toggleSidebar();
+
+      setTimeout(() => {
+        const payload = JSON.stringify(orders);
+        new QRCode(target, {
+          text: payload,
+          width: 200,
+          height: 200
+        });
+      }, 150);
     }
 
+    // CORRECTION ACCÈS CAMÉRA MOBILE SCANNER QR
     function openQrScannerModal() {
       const modal = document.getElementById('qr-scan-modal');
       modal.classList.remove('hidden');
       toggleSidebar();
 
-      html5QrScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
-      html5QrScanner.render((decodedText) => {
-        try {
-          const imported = JSON.parse(decodedText);
-          if (Array.isArray(imported)) {
-            orders = imported;
-            saveToStorage();
-            alert("Synchronisation réussie ! Vos données sont à jour.");
-            closeQrScannerModal();
-          }
-        } catch(e) { alert("Code QR invalide."); }
-      }, (errorMessage) => {});
+      setTimeout(() => {
+        html5QrScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 220 }, false);
+        html5QrScanner.render((decodedText) => {
+          try {
+            const imported = JSON.parse(decodedText);
+            if (Array.isArray(imported)) {
+              orders = imported;
+              saveToStorage();
+              alert("Synchronisation réussie ! Vos données sont à jour.");
+              closeQrScannerModal();
+            }
+          } catch(e) { alert("Code QR invalide."); }
+        }, (errorMessage) => {});
+      }, 200);
     }
 
     function closeQrScannerModal() {
@@ -698,7 +704,6 @@
         }
         if(btnAddText) btnAddText.innerText = tab === 'cinema' ? "Ajouter une sortie" : "Ajouter un film";
         
-        // Cacher la barre de recherche sur le cinéma
         if(searchContainer) {
           if(tab === 'cinema') searchContainer.classList.add('hidden');
           else searchContainer.classList.remove('hidden');
@@ -736,7 +741,6 @@
       }
     }
 
-    // MARQUAGE RAPIDE DE RÉCEPTION / FILM VU
     function markAsReceived(id) {
       const item = orders.find(o => o.id === id);
       if (item) {
@@ -753,7 +757,6 @@
       }
     }
 
-    // FORMULAIRE ADAPTATIF SUR MESURE
     function openModal(id = null) {
       const modal = document.getElementById('modal');
       const form = document.getElementById('order-form');
@@ -869,7 +872,7 @@
           document.getElementById('format').value = 'Place Cinéma';
           document.getElementById('merchant').value = 'Cinéma local';
         } else if (currentTab === 'orders') {
-          document.getElementById('status').value = 'Précommandé (Débit à venir)';
+          document.getElementById('status').value = 'Précommandes (Débit à venir)';
           document.getElementById('merchant').value = 'Amazon';
         } else if (currentTab === 'collection') {
           document.getElementById('status').value = 'Possédé / Dans la collection';
@@ -972,23 +975,20 @@
 
       const currentYear = new Date().getFullYear().toString();
 
-      // LOGIQUE PRÉCOMMANDES
+      // LOGIQUE PRÉCOMMANDES (AVEC TOTAL GÉNÉRAL)
       if (currentTab === 'orders') {
         if (statDebitBox) statDebitBox.classList.remove('hidden');
-        if (statLabelCenter) statLabelCenter.innerText = "Débits sous 7j";
+        if (statLabelCenter) statLabelCenter.innerText = "Total Général / Débits";
 
         const now = new Date().getTime();
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
-        const nextDebits = filteredOrders
-          .filter(o => o.status !== 'Réceptionné' && o.releaseDate)
-          .filter(o => {
-            const release = new Date(o.releaseDate).getTime();
-            return (release >= now && (release - now) <= sevenDays);
-          })
+        // Calcul du total général de toutes les précommandes non réceptionnées
+        const totalGeneralOrders = filteredOrders
+          .filter(o => o.status !== 'Réceptionné')
           .reduce((sum, o) => sum + (o.price || 0), 0);
 
-        if (statTotalDebit) statTotalDebit.innerText = `${nextDebits.toFixed(2)} €`;
+        if (statTotalDebit) statTotalDebit.innerText = `${totalGeneralOrders.toFixed(2)} €`;
 
         if (statLabelLeft) statLabelLeft.innerText = "Prochaine Sortie";
         const activeOrders = filteredOrders.filter(o => o.releaseDate && o.status !== 'Réceptionné');
@@ -1140,7 +1140,7 @@
         container.innerHTML = htmlCinema;
         startCountdowns();
 
-      // VUE PRÉCOMMANDES
+      // VUE PRÉCOMMANDES (2 COLONNES PC / 4 COLONNES MOBILE)
       } else if (currentTab === 'orders') {
         container.className = "space-y-6";
 
@@ -1155,33 +1155,34 @@
               <h3 class="font-retro font-bold text-xs text-neon-pink uppercase tracking-wider border-b border-pink-500/30 pb-2 flex items-center gap-2">
                 <i class="fa-solid fa-box-open"></i> En attente de livraison (${pendingOrders.length})
               </h3>
-              ${pendingOrders.map(item => `
-                <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-4 flex items-center justify-between gap-4 shadow-lg hover:border-pink-500/50 transition-all">
-                  <div class="w-14 h-14 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40">
-                    ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-compact-disc text-neon-pink text-xl"></i>`}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="text-[10px] font-retro font-bold text-neon-cyan bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">${item.merchant || 'Amazon'}</span>
-                      <span class="text-[10px] font-retro font-bold text-pink-300">${item.format || 'Standard'}</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                ${pendingOrders.map(item => `
+                  <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-3 flex flex-col justify-between gap-3 shadow-lg hover:border-pink-500/50 transition-all">
+                    <div class="flex items-center gap-3">
+                      <div class="w-12 h-12 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40">
+                        ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-compact-disc text-neon-pink text-lg"></i>`}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1 mb-0.5">
+                          <span class="text-[9px] font-retro font-bold text-neon-cyan bg-cyan-950/50 px-1.5 py-0.5 rounded border border-cyan-500/30">${item.merchant || 'Amazon'}</span>
+                        </div>
+                        <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                      </div>
                     </div>
-                    <h4 class="font-bold text-sm text-white truncate">${item.title}</h4>
-                    <p class="text-xs text-slate-400 flex items-center gap-2 mt-1 font-medium">
-                      <i class="fa-regular fa-calendar text-neon-pink"></i> 
-                      <span class="text-slate-200 font-semibold">${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
-                      <span class="text-slate-600">•</span>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-purple-900/40">
+                      <span class="text-slate-200 font-semibold"><i class="fa-regular fa-calendar text-neon-pink"></i> ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'}) : 'N/C'}</span>
                       <span class="text-emerald-400 font-bold">${(item.price || 0).toFixed(2)} €</span>
-                    </p>
+                    </div>
+                    <div class="flex items-center justify-between gap-1 pt-1">
+                      <button onclick="markAsReceived('${item.id}')" title="Marquer comme reçu" class="flex-1 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 py-1.5 px-2 rounded text-[10px] font-bold cursor-pointer text-center">
+                        <i class="fa-solid fa-check"></i> Reçu
+                      </button>
+                      <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-2 shrink-0">
-                    <button onclick="markAsReceived('${item.id}')" title="Marquer comme reçu" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 p-2 rounded-lg text-xs font-bold cursor-pointer transition-all">
-                      <i class="fa-solid fa-check text-emerald-400"></i> Reçu
-                    </button>
-                    <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-2 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
-                    <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                  </div>
-                </div>
-              `).join('')}
+                `).join('')}
+              </div>
             </div>
           `;
         }
@@ -1204,19 +1205,21 @@
                   <h3 class="font-retro font-bold text-xs text-emerald-400 tracking-wider">📦 PRODUITS RÉCEPTIONNÉS EN ${yr} (${films.length} articles)</h3>
                   <span class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded border border-emerald-500/30">Total : ${totalYearSpent.toFixed(2)} €</span>
                 </div>
-                <div class="space-y-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   ${films.map(item => `
-                    <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3 opacity-75 hover:opacity-100 transition-opacity">
-                      <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex flex-col justify-between gap-2 opacity-75 hover:opacity-100 transition-opacity">
+                      <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
                           ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-box text-emerald-400 text-sm"></i>`}
                         </div>
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                           <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
-                          <span class="text-[10px] text-slate-400">${item.merchant || 'Fnac'} • Reçu le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
+                          <span class="text-[9px] text-slate-400">${item.merchant || 'Fnac'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
                         </div>
                       </div>
-                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                      <div class="flex justify-end pt-1 border-t border-purple-900/30">
+                        <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-1 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                      </div>
                     </div>
                   `).join('')}
                 </div>
