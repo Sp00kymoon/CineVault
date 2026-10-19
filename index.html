@@ -778,7 +778,7 @@
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
         lblPrice.innerText = "PRIX TOTAL (€)";
-        wrpStatus.classList.remove('hidden');
+        wrpStatus.classList.add('hidden');
       } else {
         grpClass.classList.remove('hidden');
         wrpSaga.classList.remove('hidden');
@@ -796,7 +796,7 @@
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
         lblPrice.innerText = "PRIX D'ACHAT (€)";
-        wrpStatus.classList.remove('hidden');
+        wrpStatus.classList.add('hidden');
       }
 
       if (id) {
@@ -974,7 +974,7 @@
           statNextRelease.innerText = `${watchedThisYear.length} film(s) vu(s)`;
         }
         if (statLabelCount) statLabelCount.innerText = "Prochainement";
-        statTotalCount.innerText = filteredOrders.filter(o => o.status !== 'Film Vu').length;
+        statTotalCount.innerText = filteredOrders.filter(o => new Date(o.releaseDate).getTime() > new Date().getTime()).length;
 
       } else if (currentTab === 'collection') {
         if (statLabelLeft) statLabelLeft.innerText = "Note Moyenne";
@@ -1003,15 +1003,29 @@
 
       emptyState.classList.add('hidden');
 
-      // VUE SORTIES CINÉMA
+      // VUE SORTIES CINÉMA (3 CATÉGORIES)
       if (currentTab === 'cinema') {
         container.className = "space-y-8";
 
-        const upcomingCinema = filteredOrders.filter(o => o.status !== 'Film Vu');
-        const watchedCinema = filteredOrders.filter(o => o.status === 'Film Vu');
+        const now = new Date().getTime();
+        const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+
+        // 1. Prochainement (date future)
+        const upcomingCinema = filteredOrders.filter(o => o.releaseDate && new Date(o.releaseDate).getTime() > now);
+
+        // 2. Actuellement en salle (sorti depuis moins d'un mois, peu importe si vu ou non)
+        const currentCinema = filteredOrders.filter(o => {
+          if (!o.releaseDate) return false;
+          const releaseTime = new Date(o.releaseDate).getTime();
+          return releaseTime <= now && (now - releaseTime) <= oneMonthMs;
+        });
+
+        // 3. Sorties 2026 / Historique de l'année (tous les films de l'année en cours)
+        const yearCinema = filteredOrders.filter(o => o.releaseDate && o.releaseDate.startsWith(currentYear));
 
         let htmlCinema = '';
 
+        // Catégorie 1 : Prochainement
         if (upcomingCinema.length > 0) {
           htmlCinema += `
             <div>
@@ -1019,82 +1033,56 @@
                 <i class="fa-solid fa-ticket"></i> Prochainement en Salle (${upcomingCinema.length})
               </h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                ${upcomingCinema.map(item => `
-                  <div class="bg-[#0c0a14]/90 border border-amber-500/40 rounded-3xl p-4 shadow-2xl flex flex-col justify-between group">
-                    <div class="relative aspect-square bg-black rounded-2xl overflow-hidden shadow-inner">
-                      ${item.imageUrl 
-                        ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">`
-                        : `<div class="w-full h-full flex items-center justify-center bg-purple-950/40"><i class="fa-solid fa-ticket text-amber-400 text-4xl"></i></div>`
-                      }
-                      <div class="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md border border-pink-500/50 p-2.5 rounded-xl shadow-lg flex flex-col items-center justify-center">
-                        <p class="text-[9px] font-retro font-bold text-amber-300 uppercase tracking-widest mb-1">COMPTE À REBOURS</p>
-                        <div class="cinema-countdown-timer" data-date="${item.releaseDate || ''}">Calcul...</div>
+                ${upcomingCinema.map(item => renderCinemaCard(item, true)).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Catégorie 2 : Actuellement en salle (< 1 mois)
+        if (currentCinema.length > 0) {
+          htmlCinema += `
+            <div>
+              <h3 class="font-retro font-bold text-xs text-neon-cyan uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-cyan-500/30 pb-2">
+                <i class="fa-solid fa-play"></i> Actuellement en Salle (< 1 mois) (${currentCinema.length})
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                ${currentCinema.map(item => renderCinemaCard(item, false)).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Catégorie 3 : Sorties et Séances de l'année (2026)
+        if (yearCinema.length > 0) {
+          const totalYearSpent = yearCinema.reduce((sum, f) => sum + (f.price || 0), 0);
+          htmlCinema += `
+            <div class="bg-[#0c0a14]/60 border border-purple-900/50 rounded-2xl p-4 space-y-3">
+              <div class="flex items-center justify-between border-b border-purple-900/40 pb-2">
+                <h3 class="font-retro font-bold text-xs text-emerald-400 tracking-wider">🗓️ TOUTES LES SORTIES ${currentYear} (${yearCinema.length} films)</h3>
+                <span class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded border border-amber-500/30">Total : ${totalYearSpent.toFixed(2)} €</span>
+              </div>
+              <div class="space-y-2">
+                ${yearCinema.map(item => `
+                  <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                      <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
+                        ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-ticket text-amber-400 text-sm"></i>`}
+                      </div>
+                      <div class="min-w-0">
+                        <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                        <span class="text-[10px] text-slate-400">Sortie le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="${item.status === 'Film Vu' ? 'text-emerald-400' : 'text-amber-400'}">${item.status}</strong> • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
                       </div>
                     </div>
-
-                    <div class="mt-4 flex flex-col justify-between flex-1">
-                      <div>
-                        <div class="flex items-center justify-between gap-2 mb-1">
-                          ${item.genre ? `<span class="text-[10px] font-retro font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">${item.genre}</span>` : ''}
-                          <span class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar text-neon-pink"></i> ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
-                        </div>
-                        <h4 class="font-bold text-base text-white truncate">${item.title}</h4>
-                      </div>
-
-                      <div class="flex items-center justify-between mt-4 pt-3 border-t border-purple-900/40">
-                        <button onclick="markAsWatchedCinema('${item.id}')" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-retro font-bold tracking-wider flex items-center gap-1.5 cursor-pointer">
-                          <i class="fa-solid fa-check text-emerald-400"></i> J'ai vu ce film 🎬
-                        </button>
-                        <div class="flex items-center gap-1">
-                          <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
-                          <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                      </div>
+                    <div class="flex items-center gap-1">
+                      <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-2 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
                     </div>
                   </div>
                 `).join('')}
               </div>
             </div>
           `;
-        }
-
-        if (watchedCinema.length > 0) {
-          const watchedGrouped = {};
-          watchedCinema.forEach(w => {
-            const yr = w.releaseDate ? w.releaseDate.split('-')[0] : 'Inconnue';
-            if(!watchedGrouped[yr]) watchedGrouped[yr] = [];
-            watchedGrouped[yr].push(w);
-          });
-
-          Object.keys(watchedGrouped).sort().reverse().forEach(yr => {
-            const films = watchedGrouped[yr];
-            const totalYearSpent = films.reduce((sum, f) => sum + (f.price || 0), 0);
-
-            htmlCinema += `
-              <div class="bg-[#0c0a14]/60 border border-purple-900/50 rounded-2xl p-4 space-y-3">
-                <div class="flex items-center justify-between border-b border-purple-900/40 pb-2">
-                  <h3 class="font-retro font-bold text-xs text-emerald-400 tracking-wider">🎬 HISTORIQUE DES SÉANCES ${yr} (${films.length} films)</h3>
-                  <span class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded border border-amber-500/30">Total : ${totalYearSpent.toFixed(2)} €</span>
-                </div>
-                <div class="space-y-2">
-                  ${films.map(item => `
-                    <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3">
-                      <div class="flex items-center gap-3 min-w-0 flex-1">
-                        <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
-                          ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-ticket text-amber-400 text-sm"></i>`}
-                        </div>
-                        <div class="min-w-0">
-                          <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
-                          <span class="text-[10px] text-slate-400">Vu le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
-                        </div>
-                      </div>
-                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-            `;
-          });
         }
 
         container.innerHTML = htmlCinema;
@@ -1240,6 +1228,53 @@
       }
     }
 
+    function renderCinemaCard(item, showCountdown) {
+      return `
+        <div class="bg-[#0c0a14]/90 border border-amber-500/40 rounded-3xl p-4 shadow-2xl flex flex-col justify-between group">
+          <div class="relative aspect-square bg-black rounded-2xl overflow-hidden shadow-inner">
+            ${item.imageUrl 
+              ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">`
+              : `<div class="w-full h-full flex items-center justify-center bg-purple-950/40"><i class="fa-solid fa-ticket text-amber-400 text-4xl"></i></div>`
+            }
+            ${showCountdown ? `
+              <div class="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md border border-pink-500/50 p-2.5 rounded-xl shadow-lg flex flex-col items-center justify-center">
+                <p class="text-[9px] font-retro font-bold text-amber-300 uppercase tracking-widest mb-1">COMPTE À REBOURS</p>
+                <div class="cinema-countdown-timer" data-date="${item.releaseDate || ''}">Calcul...</div>
+              </div>
+            ` : `
+              <div class="absolute top-3 right-3 bg-cyan-950/90 border border-cyan-500/60 px-2.5 py-1 rounded-lg text-[10px] font-retro font-bold text-neon-cyan">
+                À l'affiche 🎬
+              </div>
+            `}
+          </div>
+
+          <div class="mt-4 flex flex-col justify-between flex-1">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-1">
+                ${item.genre ? `<span class="text-[10px] font-retro font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">${item.genre}</span>` : ''}
+                <span class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar text-neon-pink"></i> ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
+              </div>
+              <h4 class="font-bold text-base text-white truncate">${item.title}</h4>
+            </div>
+
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-purple-900/40">
+              ${item.status !== 'Film Vu' ? `
+                <button onclick="markAsWatchedCinema('${item.id}')" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-retro font-bold tracking-wider flex items-center gap-1.5 cursor-pointer">
+                  <i class="fa-solid fa-check text-emerald-400"></i> Vu 🎬
+                </button>
+              ` : `
+                <span class="text-xs font-bold text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Film Vu</span>
+              `}
+              <div class="flex items-center gap-1">
+                <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderCollectionRow(item) {
       const stars = parseInt(item.rating || 0);
       return `
@@ -1274,16 +1309,10 @@
     function renderBilan() {
       const selectedYear = document.getElementById('bilan-year-select').value;
 
-      // 1. Films collectionnés cette année (basé sur la date d'achat/sortie ou releaseDate)
       const collectionFilms = orders.filter(o => o.category === 'collection' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
-      
-      // 2. Précommandes / commandes web de l'année
       const yearOrders = orders.filter(o => o.category === 'orders' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
-
-      // 3. Séances de cinéma de l'année (films vus en salle)
       const yearCinema = orders.filter(o => o.category === 'cinema' && o.status === 'Film Vu' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
 
-      // Calcul des dépenses totales de l'année
       const spentCollection = collectionFilms.reduce((sum, o) => sum + (o.price || 0), 0);
       const spentOrders = yearOrders.reduce((sum, o) => sum + (o.price || 0), 0);
       const spentCinema = yearCinema.reduce((sum, o) => sum + (o.price || 0), 0);
@@ -1293,7 +1322,6 @@
       document.getElementById('bilan-total-collection').innerText = collectionFilms.length;
       document.getElementById('bilan-total-cinema').innerText = yearCinema.length;
 
-      // Rendu de la liste Collection
       const colContainer = document.getElementById('bilan-collection-list');
       if (collectionFilms.length === 0) {
         colContainer.innerHTML = `<p class="text-xs text-slate-500 italic">Aucun film ajouté en ${selectedYear}.</p>`;
@@ -1313,7 +1341,6 @@
         `).join('');
       }
 
-      // Rendu de la liste Précommandes
       const ordContainer = document.getElementById('bilan-orders-list');
       if (yearOrders.length === 0) {
         ordContainer.innerHTML = `<p class="text-xs text-slate-500 italic">Aucune précommande en ${selectedYear}.</p>`;
@@ -1333,7 +1360,6 @@
         `).join('');
       }
 
-      // Rendu de la liste Cinéma
       const cinContainer = document.getElementById('bilan-cinema-list');
       if (yearCinema.length === 0) {
         cinContainer.innerHTML = `<p class="text-xs text-slate-500 italic">Aucune séance enregistrée en ${selectedYear}.</p>`;
