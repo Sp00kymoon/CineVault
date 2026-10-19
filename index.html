@@ -9,6 +9,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Librairies QR Code (Génération & Scan) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -72,7 +76,6 @@
       border-radius: 50%;
       border: 1px solid rgba(255, 255, 255, 0.4);
     }
-    /* Forcer l'affichage du calendrier dans les inputs de type date sur iOS/Navigateurs */
     input[type="date"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
       cursor: pointer;
@@ -113,7 +116,7 @@
       </button>
 
       <button onclick="switchTab('cinema')" id="nav-cinema" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
-        <i class="fa-solid fa-ticket text-amber-400 w-5"></i> Sorties Cinéma ⏳
+        <i class="fa-solid fa-ticket text-amber-400 w-5"></i> Sorties Cinéma 🍿
       </button>
 
       <button onclick="switchTab('collection')" id="nav-collection" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer">
@@ -135,13 +138,23 @@
         </button>
       </div>
 
-      <div class="pt-4 mt-4 border-t border-purple-900/40">
-        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Synchronisation</p>
-        <button onclick="exportDataText()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer">
-          <i class="fa-solid fa-copy text-emerald-400 w-5"></i> Copier les données
+      <div class="pt-4 mt-4 border-t border-purple-900/40 space-y-2">
+        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-1">Synchronisation QR</p>
+        <button onclick="openQrGeneratorModal()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-neon-pink hover:bg-pink-950/30 border border-pink-500/30 cursor-pointer">
+          <i class="fa-solid fa-qrcode text-neon-pink w-5"></i> Générer QR Code (PC)
         </button>
-        <button onclick="importDataText()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer mt-1">
-          <i class="fa-solid fa-paste text-cyan-400 w-5"></i> Coller une sauvegarde
+        <button onclick="openQrScannerModal()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-neon-cyan hover:bg-cyan-950/30 border border-cyan-500/30 cursor-pointer">
+          <i class="fa-solid fa-camera text-neon-cyan w-5"></i> Scanner QR Code (Mobile)
+        </button>
+      </div>
+
+      <div class="pt-4 mt-4 border-t border-purple-900/40">
+        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Sauvegarde Texte</p>
+        <button onclick="exportDataText()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer">
+          <i class="fa-solid fa-copy text-emerald-400 w-5"></i> Copier le texte
+        </button>
+        <button onclick="importDataText()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer mt-1">
+          <i class="fa-solid fa-paste text-cyan-400 w-5"></i> Coller un texte
         </button>
       </div>
     </div>
@@ -182,7 +195,7 @@
           <div id="stat-next-release" class="text-base font-retro font-bold text-white mt-1 truncate">Aucune</div>
         </div>
         <div id="stat-debit-box" class="bg-[#0c0a14]/90 p-4 rounded-xl border border-amber-500/30 backdrop-blur-sm flex flex-col justify-between">
-          <p class="text-xs font-bold tracking-widest text-amber-300 uppercase" id="stat-label-center">Débits à venir</p>
+          <p class="text-xs font-bold tracking-widest text-amber-300 uppercase" id="stat-label-center">Débits sous 7j</p>
           <p id="stat-total-debit" class="text-2xl font-retro font-black text-amber-400 mt-1">0.00 €</p>
         </div>
         <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-cyan-500/30 neon-box-cyan backdrop-blur-sm flex flex-col justify-between">
@@ -191,8 +204,8 @@
         </div>
       </div>
 
-      <!-- BARRE DE RECHERCHE ET FILTRES INTERNES -->
-      <div class="bg-[#0c0a14]/90 border border-purple-900/60 p-3.5 rounded-xl mb-6 space-y-3">
+      <!-- BARRE DE RECHERCHE ET FILTRES (RANGÉE SI COMPATIBLE) -->
+      <div id="search-bar-container" class="bg-[#0c0a14]/90 border border-purple-900/60 p-3.5 rounded-xl mb-6 space-y-3">
         <div class="relative">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
           <input type="text" id="internal-search-input" oninput="render()" placeholder="Rechercher (titre, genre, saga, réalisateur...)..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-neon-cyan font-semibold">
@@ -285,7 +298,7 @@
             </div>
           </div>
 
-          <!-- CHAMPS DE CLASSIFICATION (GENRE / SAGA) -->
+          <!-- CHAMPS DE CLASSIFICATION -->
           <div id="field-group-classification" class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">GENRE / TYPE FILM</label>
@@ -304,7 +317,7 @@
               <div class="flex items-center gap-2">
                 <input type="file" id="image-file-input" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
                 <button type="button" onclick="document.getElementById('image-file-input').click()" class="bg-purple-950/80 border border-purple-500/40 hover:bg-purple-900 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all">
-                  <i class="fa-solid fa-image text-neon-cyan"></i> Choisir dans mes photos
+                  <i class="fa-solid fa-image text-neon-cyan"></i> Photo appareil
                 </button>
                 <button type="button" onclick="searchPosterGoogle()" class="text-[10px] text-neon-cyan hover:underline font-bold ml-auto"><i class="fa-solid fa-arrow-up-right-from-square"></i> Chercher sur Google</button>
               </div>
@@ -315,7 +328,7 @@
             </div>
           </div>
 
-          <!-- DATES & ANNÉE (CALENDRIER INTERACTIF TYPE="DATE") -->
+          <!-- DATES & ANNÉE (CALENDRIER INTERACTIF) -->
           <div id="field-group-dates" class="grid grid-cols-2 gap-4">
             <div id="field-wrapper-release-date">
               <label id="label-release-date" class="block text-xs font-bold text-slate-300 tracking-wider mb-1">DATE DE SORTIE *</label>
@@ -394,18 +407,17 @@
           <!-- PRIX & STATUT -->
           <div id="field-group-price-status" class="grid grid-cols-2 gap-4">
             <div id="field-wrapper-price">
-              <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">PRIX (€)</label>
-              <input type="number" id="price" step="0.01" placeholder="29.99" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold">
+              <label id="label-price" class="block text-xs font-bold text-slate-300 tracking-wider mb-1">PRIX DE LA PLACE (€)</label>
+              <input type="number" id="price" step="0.01" placeholder="12.00" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold">
             </div>
             <div id="field-wrapper-status">
               <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">STATUT</label>
               <select id="status" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
-                <option value="Payé">Payé</option>
-                <option value="En attente d'expédition">En attente d'expédition</option>
                 <option value="Précommandé (Débit à venir)">Précommandé (Débit à venir)</option>
-                <option value="Expédié">Expédié</option>
-                <option value="Possédé / Dans la collection">Possédé / Dans la collection</option>
+                <option value="Réceptionné">Réceptionné</option>
                 <option value="À voir au Cinéma">À voir au Cinéma</option>
+                <option value="Film Vu">Film Vu 🎬</option>
+                <option value="Possédé / Dans la collection">Possédé / Dans la collection</option>
               </select>
             </div>
           </div>
@@ -419,34 +431,28 @@
     </div>
   </div>
 
-  <!-- MODAL LECTURE FICHE FILM -->
-  <div id="detail-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closeDetailModal()">
-    <div class="bg-[#0c0a14] border border-emerald-500/50 w-full max-w-lg rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.25)] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
-      <div class="relative bg-black h-64 overflow-hidden flex items-center justify-center">
-        <img id="detail-img" src="" class="w-full h-full object-cover opacity-80">
-        <button onclick="closeDetailModal()" class="absolute top-4 right-4 bg-black/70 text-white rounded-full p-2 hover:bg-black"><i class="fa-solid fa-xmark text-lg"></i></button>
+  <!-- MODAL GENERATEUR QR CODE (PC) -->
+  <div id="qr-gen-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0c0a14] border border-pink-500/50 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-[0_0_30px_rgba(255,0,127,0.3)]">
+      <h3 class="font-retro font-bold text-neon-pink text-sm tracking-wider flex items-center justify-center gap-2">
+        <i class="fa-solid fa-qrcode"></i> SYNCHRO QR CODE
+      </h3>
+      <p class="text-xs text-slate-300 font-medium">Scannez ce QR Code avec l'appareil photo de votre téléphone dans l'application CinéVault pour transférer vos données.</p>
+      <div class="p-3 bg-white rounded-xl flex items-center justify-center mx-auto w-fit shadow-inner">
+        <div id="qrcode-target"></div>
       </div>
-      <div class="p-6 modal-scroll space-y-3">
-        <div class="flex justify-between items-start">
-          <h2 id="detail-title" class="text-xl font-retro font-bold text-white"></h2>
-          <span id="detail-year" class="text-xs font-bold text-emerald-400 bg-emerald-950 px-2 py-1 rounded border border-emerald-500/40"></span>
-        </div>
-        <div class="flex items-center gap-2">
-          <p id="detail-saga" class="text-xs font-bold text-neon-pink"></p>
-          <div id="detail-rating" class="text-amber-400 text-xs"></div>
-        </div>
-        <div id="detail-genre" class="text-xs text-amber-300 font-bold"></div>
-        <div id="detail-loan" class="hidden text-xs bg-cyan-950/60 border border-cyan-500/40 p-2 rounded text-cyan-300 font-semibold"></div>
-        <div class="text-xs text-slate-300 space-y-1">
-          <p><strong>Réalisateur :</strong> <span id="detail-director" class="text-slate-100"></span></p>
-          <p><strong>Acteurs :</strong> <span id="detail-actors" class="text-slate-100"></span></p>
-        </div>
-        <hr class="border-purple-900/40">
-        <div>
-          <p class="text-xs font-bold text-slate-400 mb-1">SYNOPSIS</p>
-          <p id="detail-synopsis" class="text-xs text-slate-200 leading-relaxed font-medium"></p>
-        </div>
-      </div>
+      <button onclick="document.getElementById('qr-gen-modal').classList.add('hidden')" class="w-full bg-slate-900 text-slate-300 py-2.5 rounded-lg font-bold text-xs uppercase cursor-pointer">Fermer</button>
+    </div>
+  </div>
+
+  <!-- MODAL SCANNER QR CODE (IPHONE/MOBILE) -->
+  <div id="qr-scan-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0c0a14] border border-cyan-500/50 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-[0_0_30px_rgba(0,243,255,0.3)]">
+      <h3 class="font-retro font-bold text-neon-cyan text-sm tracking-wider flex items-center justify-center gap-2">
+        <i class="fa-solid fa-camera"></i> SCANNER LE QR CODE
+      </h3>
+      <div id="qr-reader" class="w-full bg-black rounded-xl border border-purple-900/50 overflow-hidden"></div>
+      <button onclick="closeQrScannerModal()" class="w-full bg-slate-900 text-slate-300 py-2.5 rounded-lg font-bold text-xs uppercase cursor-pointer">Annuler</button>
     </div>
   </div>
 
@@ -473,6 +479,7 @@
     let currentFormatFilter = 'ALL';
     let orders = [];
     let countdownInterval = null;
+    let html5QrScanner = null;
 
     try {
       const savedData = localStorage.getItem('cinevault_clean_v1');
@@ -494,13 +501,13 @@
       let alertsHtml = '';
 
       const cinemaAlerts = orders.filter(o => o.category === 'cinema' && o.releaseDate && new Date(o.releaseDate).getTime() >= now && (new Date(o.releaseDate).getTime() - now) <= (7 * 24 * 60 * 60 * 1000));
-      const orderAlerts = orders.filter(o => o.category === 'orders' && o.releaseDate && new Date(o.releaseDate).getTime() >= now && (new Date(o.releaseDate).getTime() - now) <= (7 * 24 * 60 * 60 * 1000));
+      const orderAlerts = orders.filter(o => o.category === 'orders' && o.status !== 'Réceptionné' && o.releaseDate && new Date(o.releaseDate).getTime() >= now && (new Date(o.releaseDate).getTime() - now) <= (7 * 24 * 60 * 60 * 1000));
 
       if (cinemaAlerts.length > 0) {
         alertsHtml += `<p class="text-amber-400 font-bold"><i class="fa-solid fa-ticket"></i> <strong>${cinemaAlerts.length} sortie(s) ciné</strong> cette semaine : ${cinemaAlerts.map(c => c.title).join(', ')}</p>`;
       }
       if (orderAlerts.length > 0) {
-        alertsHtml += `<p class="text-pink-400 font-bold"><i class="fa-solid fa-box"></i> <strong>${orderAlerts.length} précommande(s)</strong> imminente(s) : ${orderAlerts.map(o => o.title).join(', ')}</p>`;
+        alertsHtml += `<p class="text-pink-400 font-bold"><i class="fa-solid fa-box"></i> <strong>${orderAlerts.length} précommande(s)</strong> à débit imminent : ${orderAlerts.map(o => o.title).join(', ')}</p>`;
       }
 
       if (alertsHtml !== '') {
@@ -577,6 +584,48 @@
       }
     }
 
+    // GESTION SYNCHRO QR CODE
+    function openQrGeneratorModal() {
+      const modal = document.getElementById('qr-gen-modal');
+      const target = document.getElementById('qrcode-target');
+      target.innerHTML = '';
+      
+      const payload = JSON.stringify(orders);
+      new QRCode(target, {
+        text: payload,
+        width: 220,
+        height: 220
+      });
+      modal.classList.remove('hidden');
+      toggleSidebar();
+    }
+
+    function openQrScannerModal() {
+      const modal = document.getElementById('qr-scan-modal');
+      modal.classList.remove('hidden');
+      toggleSidebar();
+
+      html5QrScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+      html5QrScanner.render((decodedText) => {
+        try {
+          const imported = JSON.parse(decodedText);
+          if (Array.isArray(imported)) {
+            orders = imported;
+            saveToStorage();
+            alert("Synchronisation réussie ! Vos données sont à jour.");
+            closeQrScannerModal();
+          }
+        } catch(e) { alert("Code QR invalide."); }
+      }, (errorMessage) => {});
+    }
+
+    function closeQrScannerModal() {
+      if (html5QrScanner) {
+        html5QrScanner.clear().catch(e => {});
+      }
+      document.getElementById('qr-scan-modal').classList.add('hidden');
+    }
+
     function exportDataText() {
       const dataStr = JSON.stringify(orders);
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -634,6 +683,7 @@
       const viewBudget = document.getElementById('view-budget');
       const pageTitle = document.getElementById('page-title');
       const btnAddText = document.getElementById('btn-add-text');
+      const searchContainer = document.getElementById('search-bar-container');
 
       if (tab === 'budget') {
         if(viewItems) viewItems.classList.add('hidden');
@@ -647,6 +697,13 @@
           pageTitle.innerText = tab === 'orders' ? "MES PRÉCOMMANDES" : (tab === 'cinema' ? "PROCHAINEMENT AU CINÉMA 🍿" : (tab === 'collection' ? "MA COLLECTION" : "WISHLIST"));
         }
         if(btnAddText) btnAddText.innerText = tab === 'cinema' ? "Ajouter une sortie" : "Ajouter un film";
+        
+        // Cacher la barre de recherche sur le cinéma
+        if(searchContainer) {
+          if(tab === 'cinema') searchContainer.classList.add('hidden');
+          else searchContainer.classList.remove('hidden');
+        }
+
         render();
       }
     }
@@ -679,7 +736,24 @@
       }
     }
 
-    // GESTION DU FORMULAIRE DYNAMIQUE SUR MESURE
+    // MARQUAGE RAPIDE DE RÉCEPTION / FILM VU
+    function markAsReceived(id) {
+      const item = orders.find(o => o.id === id);
+      if (item) {
+        item.status = 'Réceptionné';
+        saveToStorage();
+      }
+    }
+
+    function markAsWatchedCinema(id) {
+      const item = orders.find(o => o.id === id);
+      if (item) {
+        item.status = 'Film Vu';
+        saveToStorage();
+      }
+    }
+
+    // FORMULAIRE ADAPTATIF SUR MESURE
     function openModal(id = null) {
       const modal = document.getElementById('modal');
       const form = document.getElementById('order-form');
@@ -694,7 +768,6 @@
       document.getElementById('duplicate-warning').classList.add('hidden');
       updatePreview('');
 
-      // ADAPTATION DES CHAMPS SELON L'ONGLET
       const grpClass = document.getElementById('field-group-classification');
       const grpImg = document.getElementById('field-group-image');
       const grpDates = document.getElementById('field-group-dates');
@@ -712,12 +785,12 @@
       const wrpPrice = document.getElementById('field-wrapper-price');
       const wrpStatus = document.getElementById('field-wrapper-status');
       const lblReleaseDate = document.getElementById('label-release-date');
+      const lblPrice = document.getElementById('label-price');
 
       if (currentTab === 'cinema') {
-        // FORMULAIRE SORTIES CINÉMA (Titre, Genre, Date de sortie calendrier, Image)
         grpClass.classList.remove('hidden');
         wrpSaga.classList.add('hidden');
-        grpImg.classList.remove('hidden'); // Image activée pour le ciné
+        grpImg.classList.remove('hidden');
         grpDates.classList.remove('hidden');
         wrpReleaseDate.classList.remove('hidden');
         lblReleaseDate.innerText = "DATE DE SORTIE EN SALLE *";
@@ -726,9 +799,11 @@
         grpSynopsis.classList.add('hidden');
         grpRating.classList.add('hidden');
         grpFormatMerc.classList.add('hidden');
-        grpPriceStatus.classList.add('hidden');
+        grpPriceStatus.classList.remove('hidden');
+        wrpPrice.classList.remove('hidden');
+        lblPrice.innerText = "PRIX DE LA PLACE (€)";
+        wrpStatus.classList.add('hidden');
       } else if (currentTab === 'orders') {
-        // FORMULAIRE PRÉCOMMANDES (Sans résumé, avec calendrier de date, photo, etc.)
         grpClass.classList.add('hidden');
         grpImg.classList.remove('hidden');
         grpDates.classList.remove('hidden');
@@ -736,16 +811,16 @@
         lblReleaseDate.innerText = "DATE DE SORTIE PRÉVUE *";
         wrpYear.classList.add('hidden');
         grpCredits.classList.add('hidden');
-        grpSynopsis.classList.add('hidden'); // Synopsis retiré pour les précommandes
+        grpSynopsis.classList.add('hidden');
         grpRating.classList.add('hidden');
         grpFormatMerc.classList.remove('hidden');
         wrpFormat.classList.remove('hidden');
         wrpMerchant.classList.remove('hidden');
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
+        lblPrice.innerText = "PRIX TOTAL (€)";
         wrpStatus.classList.remove('hidden');
       } else {
-        // FORMULAIRE COMPLET POUR LA COLLECTION ET WISHLIST
         grpClass.classList.remove('hidden');
         wrpSaga.classList.remove('hidden');
         grpImg.classList.remove('hidden');
@@ -761,6 +836,7 @@
         wrpMerchant.classList.remove('hidden');
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
+        lblPrice.innerText = "PRIX D'ACHAT (€)";
         wrpStatus.classList.remove('hidden');
       }
 
@@ -783,7 +859,7 @@
           document.getElementById('merchant').value = item.merchant || 'Amazon';
           document.getElementById('price').value = item.price || '';
           document.getElementById('release-date').value = item.releaseDate || '';
-          document.getElementById('status').value = item.status || (currentTab === 'cinema' ? 'À voir au Cinéma' : 'Payé');
+          document.getElementById('status').value = item.status || (currentTab === 'cinema' ? 'À voir au Cinéma' : 'Précommandé (Débit à venir)');
           updatePreview(item.imageUrl || '');
         }
       } else {
@@ -793,7 +869,7 @@
           document.getElementById('format').value = 'Place Cinéma';
           document.getElementById('merchant').value = 'Cinéma local';
         } else if (currentTab === 'orders') {
-          document.getElementById('status').value = 'Payé';
+          document.getElementById('status').value = 'Précommandé (Débit à venir)';
           document.getElementById('merchant').value = 'Amazon';
         } else if (currentTab === 'collection') {
           document.getElementById('status').value = 'Possédé / Dans la collection';
@@ -803,38 +879,6 @@
 
     function closeModal() {
       document.getElementById('modal').classList.add('hidden');
-    }
-
-    function openDetailModal(id) {
-      const item = orders.find(o => o.id === id);
-      if (!item) return;
-
-      document.getElementById('detail-title').innerText = item.title || 'Sans titre';
-      document.getElementById('detail-year').innerText = item.year ? item.year : (item.releaseDate ? item.releaseDate.split('-')[0] : 'N/C');
-      document.getElementById('detail-saga').innerText = item.saga ? `SAGA : ${item.saga.toUpperCase()}` : '';
-      document.getElementById('detail-genre').innerText = item.genre ? `GENRE : ${item.genre.toUpperCase()}` : '';
-      document.getElementById('detail-director').innerText = item.director || 'Non renseigné';
-      document.getElementById('detail-actors').innerText = item.actors || 'Non renseigné';
-      document.getElementById('detail-synopsis').innerText = item.synopsis || 'Aucun synopsis renseigné.';
-      document.getElementById('detail-img').src = item.imageUrl || '';
-
-      const ratingBox = document.getElementById('detail-rating');
-      const stars = parseInt(item.rating || 0);
-      ratingBox.innerText = stars > 0 ? '★'.repeat(stars) + '☆'.repeat(5 - stars) : '';
-
-      const loanBox = document.getElementById('detail-loan');
-      if (item.loanedTo) {
-        loanBox.innerText = `⚠️ PRÊTÉ À : ${item.loanedTo}`;
-        loanBox.classList.remove('hidden');
-      } else {
-        loanBox.classList.add('hidden');
-      }
-
-      document.getElementById('detail-modal').classList.remove('hidden');
-    }
-
-    function closeDetailModal() {
-      document.getElementById('detail-modal').classList.add('hidden');
     }
 
     function saveOrder(event) {
@@ -914,91 +958,81 @@
     function render() {
       let filteredOrders = orders.filter(o => (o.category || 'orders') === currentTab);
 
-      const searchQuery = document.getElementById('internal-search-input') ? document.getElementById('internal-search-input').value.toLowerCase().trim() : '';
-      if (searchQuery) {
-        filteredOrders = filteredOrders.filter(o => 
-          (o.title && o.title.toLowerCase().includes(searchQuery)) ||
-          (o.genre && o.genre.toLowerCase().includes(searchQuery)) ||
-          (o.saga && o.saga.toLowerCase().includes(searchQuery)) ||
-          (o.director && o.director.toLowerCase().includes(searchQuery)) ||
-          (o.actors && o.actors.toLowerCase().includes(searchQuery))
-        );
-      }
-
-      if (currentFormatFilter !== 'ALL') {
-        filteredOrders = filteredOrders.filter(o => o.format && o.format.toLowerCase().includes(currentFormatFilter.toLowerCase()));
-      }
-
-      const sortOrder = document.getElementById('sort-order') ? document.getElementById('sort-order').value : 'default';
-      if (sortOrder === 'alpha') {
-        filteredOrders.sort((a, b) => a.title.localeCompare(b.title, 'fr', { numeric: true }));
-      } else if (sortOrder === 'year') {
-        filteredOrders.sort((a, b) => new Date(a.releaseDate || 0) - new Date(b.releaseDate || 0));
-      } else if (sortOrder === 'rating') {
-        filteredOrders.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      }
-
       const statTotalCount = document.getElementById('stat-total-count');
       const statNextRelease = document.getElementById('stat-next-release');
       const statTotalDebit = document.getElementById('stat-total-debit');
       const statDebitBox = document.getElementById('stat-debit-box');
       const statLabelCount = document.getElementById('stat-label-count');
       const statLabelLeft = document.getElementById('stat-label-left');
+      const statLabelCenter = document.getElementById('stat-label-center');
       const container = document.getElementById('items-container');
       const emptyState = document.getElementById('empty-state');
 
       if (!statTotalCount || !container || !emptyState) return;
 
-      statTotalCount.innerText = filteredOrders.length;
-      if (statLabelCount) {
-        statLabelCount.innerText = currentTab === 'orders' ? 'Articles en cours' : (currentTab === 'cinema' ? 'Films à l\'affiche' : (currentTab === 'collection' ? 'Total Collection' : 'Articles Wishlist'));
-      }
+      const currentYear = new Date().getFullYear().toString();
 
+      // LOGIQUE PRÉCOMMANDES
       if (currentTab === 'orders') {
         if (statDebitBox) statDebitBox.classList.remove('hidden');
-        const pendingDebits = filteredOrders
-          .filter(o => o.status !== 'Expédié')
+        if (statLabelCenter) statLabelCenter.innerText = "Débits sous 7j";
+
+        const now = new Date().getTime();
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+        const nextDebits = filteredOrders
+          .filter(o => o.status !== 'Réceptionné' && o.releaseDate)
+          .filter(o => {
+            const release = new Date(o.releaseDate).getTime();
+            return (release >= now && (release - now) <= sevenDays);
+          })
           .reduce((sum, o) => sum + (o.price || 0), 0);
-        if (statTotalDebit) statTotalDebit.innerText = `${pendingDebits.toFixed(2)} €`;
+
+        if (statTotalDebit) statTotalDebit.innerText = `${nextDebits.toFixed(2)} €`;
 
         if (statLabelLeft) statLabelLeft.innerText = "Prochaine Sortie";
-        const activeOrders = filteredOrders.filter(o => o.releaseDate);
+        const activeOrders = filteredOrders.filter(o => o.releaseDate && o.status !== 'Réceptionné');
         activeOrders.sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
         if (activeOrders.length > 0 && statNextRelease) {
           const next = activeOrders[0];
-          const diffTime = new Date(next.releaseDate) - new Date();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          statNextRelease.innerText = diffDays > 0 ? `${diffDays}j (${next.title})` : (diffDays === 0 ? "Aujourd'hui !" : "Sorti");
+          const diffDays = Math.ceil((new Date(next.releaseDate) - now) / (1000 * 60 * 60 * 24));
+          statNextRelease.innerText = diffDays > 0 ? `${diffDays}j (${next.title})` : "Aujourd'hui !";
         } else if (statNextRelease) { statNextRelease.innerText = "Aucune date"; }
+
+        if (statLabelCount) statLabelCount.innerText = "En attente";
+        statTotalCount.innerText = filteredOrders.filter(o => o.status !== 'Réceptionné').length;
+
+      } else if (currentTab === 'cinema') {
+        if (statDebitBox) statDebitBox.classList.remove('hidden');
+        if (statLabelLeft) statLabelLeft.innerText = `Séances ${currentYear}`;
+        if (statLabelCenter) statLabelCenter.innerText = `Budget Ciné ${currentYear}`;
+
+        const watchedThisYear = filteredOrders.filter(o => o.status === 'Film Vu' && o.releaseDate && o.releaseDate.startsWith(currentYear));
+        if (statNextRelease) statNextRelease.innerText = `${watchedThisYear.length} film(s) vu(s)`;
+
+        const spentCine = watchedThisYear.reduce((sum, o) => sum + (o.price || 0), 0);
+        if (statTotalDebit) statTotalDebit.innerText = `${spentCine.toFixed(2)} €`;
+
+        if (statLabelCount) statLabelCount.innerText = "Prochainement";
+        statTotalCount.innerText = filteredOrders.filter(o => o.status !== 'Film Vu').length;
+
       } else if (currentTab === 'collection') {
         if (statDebitBox) statDebitBox.classList.remove('hidden');
         if (statLabelLeft) statLabelLeft.innerText = "Note Moyenne";
-        
-        // Calcul de la note moyenne de la collection
+        if (statLabelCenter) statLabelCenter.innerText = "Valeur Collection";
+
         const ratedFilms = filteredOrders.filter(o => o.rating && parseInt(o.rating) > 0);
         if (ratedFilms.length > 0) {
           const avgRating = ratedFilms.reduce((sum, o) => sum + parseInt(o.rating), 0) / ratedFilms.length;
           const fullStars = Math.round(avgRating);
           statNextRelease.innerHTML = `<span class="text-amber-400">` + '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars) + `</span> <span class="text-xs text-slate-300">(${avgRating.toFixed(1)}/5)</span>`;
-        } else {
-          statNextRelease.innerText = "Aucune note";
-        }
+        } else { statNextRelease.innerText = "Aucune note"; }
 
         const totalSpent = filteredOrders.reduce((sum, o) => sum + (o.price || 0), 0);
         if (statTotalDebit) statTotalDebit.innerText = `${totalSpent.toFixed(2)} €`;
-        const statLabelCenter = document.getElementById('stat-label-center');
-        if (statLabelCenter) statLabelCenter.innerText = "Valeur Collection";
-      } else {
-        if (statDebitBox) statDebitBox.classList.add('hidden');
-        if (statLabelLeft) statLabelLeft.innerText = "Prochain Film";
-        if (currentTab === 'cinema') {
-          const sortedCinema = [...filteredOrders].sort((a,b) => new Date(a.releaseDate || 0) - new Date(b.releaseDate || 0));
-          if (sortedCinema.length > 0 && statNextRelease) {
-            statNextRelease.innerText = sortedCinema[0].title;
-          } else if (statNextRelease) { statNextRelease.innerText = "Aucun film"; }
-        } else {
-          if (statNextRelease) statNextRelease.innerText = "Mode Lignes";
-        }
+
+        if (statLabelCount) statLabelCount.innerText = "Total Collection";
+        statTotalCount.innerText = filteredOrders.length;
       }
 
       if (filteredOrders.length === 0) {
@@ -1009,45 +1043,195 @@
 
       emptyState.classList.add('hidden');
 
+      // VUE SORTIES CINÉMA
       if (currentTab === 'cinema') {
-        container.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6";
-        container.innerHTML = filteredOrders.map(item => `
-          <div class="bg-[#0c0a14]/90 border border-amber-500/40 rounded-3xl p-4 shadow-2xl hover:border-amber-400 transition-all flex flex-col justify-between group">
-            <div class="relative aspect-square bg-black rounded-2xl overflow-hidden shadow-inner cursor-pointer" onclick="openDetailModal('${item.id}')">
-              ${item.imageUrl 
-                ? `<img src="${item.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">`
-                : `<div class="w-full h-full flex items-center justify-center bg-purple-950/40"><i class="fa-solid fa-ticket text-amber-400 text-4xl"></i></div>`
-              }
-              <div class="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md border border-pink-500/50 p-2.5 rounded-xl shadow-lg flex flex-col items-center justify-center">
-                <p class="text-[9px] font-retro font-bold text-amber-300 uppercase tracking-widest mb-1">COMPTE À REBOURS</p>
-                <div class="cinema-countdown-timer" data-date="${item.releaseDate || ''}">Calcul...</div>
+        container.className = "space-y-8";
+
+        const upcomingCinema = filteredOrders.filter(o => o.status !== 'Film Vu');
+        const watchedCinema = filteredOrders.filter(o => o.status === 'Film Vu');
+
+        let htmlCinema = '';
+
+        if (upcomingCinema.length > 0) {
+          htmlCinema += `
+            <div>
+              <h3 class="font-retro font-bold text-xs text-amber-400 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-amber-500/30 pb-2">
+                <i class="fa-solid fa-ticket"></i> Prochainement en Salle (${upcomingCinema.length})
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                ${upcomingCinema.map(item => `
+                  <div class="bg-[#0c0a14]/90 border border-amber-500/40 rounded-3xl p-4 shadow-2xl flex flex-col justify-between group">
+                    <div class="relative aspect-square bg-black rounded-2xl overflow-hidden shadow-inner">
+                      ${item.imageUrl 
+                        ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">`
+                        : `<div class="w-full h-full flex items-center justify-center bg-purple-950/40"><i class="fa-solid fa-ticket text-amber-400 text-4xl"></i></div>`
+                      }
+                      <div class="absolute bottom-3 left-3 right-3 bg-black/80 backdrop-blur-md border border-pink-500/50 p-2.5 rounded-xl shadow-lg flex flex-col items-center justify-center">
+                        <p class="text-[9px] font-retro font-bold text-amber-300 uppercase tracking-widest mb-1">COMPTE À REBOURS</p>
+                        <div class="cinema-countdown-timer" data-date="${item.releaseDate || ''}">Calcul...</div>
+                      </div>
+                    </div>
+
+                    <div class="mt-4 flex flex-col justify-between flex-1">
+                      <div>
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                          ${item.genre ? `<span class="text-[10px] font-retro font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">${item.genre}</span>` : ''}
+                          <span class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar text-neon-pink"></i> ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
+                        </div>
+                        <h4 class="font-bold text-base text-white truncate">${item.title}</h4>
+                      </div>
+
+                      <div class="flex items-center justify-between mt-4 pt-3 border-t border-purple-900/40">
+                        <button onclick="markAsWatchedCinema('${item.id}')" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-retro font-bold tracking-wider flex items-center gap-1.5 cursor-pointer">
+                          <i class="fa-solid fa-check text-emerald-400"></i> J'ai vu ce film 🎬
+                        </button>
+                        <div class="flex items-center gap-1">
+                          <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                          <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
               </div>
             </div>
+          `;
+        }
 
-            <div class="mt-4 flex flex-col justify-between flex-1">
-              <div>
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  ${item.genre ? `<span class="text-[10px] font-retro font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">${item.genre}</span>` : ''}
-                  <span class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar text-neon-pink"></i> ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
+        if (watchedCinema.length > 0) {
+          const watchedGrouped = {};
+          watchedCinema.forEach(w => {
+            const yr = w.releaseDate ? w.releaseDate.split('-')[0] : 'Inconnue';
+            if(!watchedGrouped[yr]) watchedGrouped[yr] = [];
+            watchedGrouped[yr].push(w);
+          });
+
+          Object.keys(watchedGrouped).sort().reverse().forEach(yr => {
+            const films = watchedGrouped[yr];
+            const totalYearSpent = films.reduce((sum, f) => sum + (f.price || 0), 0);
+
+            htmlCinema += `
+              <div class="bg-[#0c0a14]/60 border border-purple-900/50 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between border-b border-purple-900/40 pb-2">
+                  <h3 class="font-retro font-bold text-xs text-emerald-400 tracking-wider">🎬 HISTORIQUE DES SÉANCES ${yr} (${films.length} films)</h3>
+                  <span class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded border border-amber-500/30">Total : ${totalYearSpent.toFixed(2)} €</span>
                 </div>
-                <h4 class="font-bold text-base text-white truncate hover:text-amber-300 cursor-pointer" onclick="openDetailModal('${item.id}')">${item.title}</h4>
+                <div class="space-y-2">
+                  ${films.map(item => `
+                    <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
+                          ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-ticket text-amber-400 text-sm"></i>`}
+                        </div>
+                        <div class="min-w-0">
+                          <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                          <span class="text-[10px] text-slate-400">Vu le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
+                        </div>
+                      </div>
+                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                  `).join('')}
+                </div>
               </div>
+            `;
+          });
+        }
 
-              <div class="flex justify-end items-center mt-3 pt-2 border-t border-purple-900/40 gap-2">
-                <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-
+        container.innerHTML = htmlCinema;
         startCountdowns();
 
+      // VUE PRÉCOMMANDES
+      } else if (currentTab === 'orders') {
+        container.className = "space-y-6";
+
+        const pendingOrders = filteredOrders.filter(o => o.status !== 'Réceptionné');
+        const receivedOrders = filteredOrders.filter(o => o.status === 'Réceptionné');
+
+        let htmlOrders = '';
+
+        if (pendingOrders.length > 0) {
+          htmlOrders += `
+            <div class="space-y-3">
+              <h3 class="font-retro font-bold text-xs text-neon-pink uppercase tracking-wider border-b border-pink-500/30 pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-box-open"></i> En attente de livraison (${pendingOrders.length})
+              </h3>
+              ${pendingOrders.map(item => `
+                <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-4 flex items-center justify-between gap-4 shadow-lg hover:border-pink-500/50 transition-all">
+                  <div class="w-14 h-14 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40">
+                    ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-compact-disc text-neon-pink text-xl"></i>`}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-[10px] font-retro font-bold text-neon-cyan bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">${item.merchant || 'Amazon'}</span>
+                      <span class="text-[10px] font-retro font-bold text-pink-300">${item.format || 'Standard'}</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-white truncate">${item.title}</h4>
+                    <p class="text-xs text-slate-400 flex items-center gap-2 mt-1 font-medium">
+                      <i class="fa-regular fa-calendar text-neon-pink"></i> 
+                      <span class="text-slate-200 font-semibold">${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
+                      <span class="text-slate-600">•</span>
+                      <span class="text-emerald-400 font-bold">${(item.price || 0).toFixed(2)} €</span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="markAsReceived('${item.id}')" title="Marquer comme reçu" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 p-2 rounded-lg text-xs font-bold cursor-pointer transition-all">
+                      <i class="fa-solid fa-check text-emerald-400"></i> Reçu
+                    </button>
+                    <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-2 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        if (receivedOrders.length > 0) {
+          const receivedGrouped = {};
+          receivedOrders.forEach(r => {
+            const yr = r.releaseDate ? r.releaseDate.split('-')[0] : '2026';
+            if(!receivedGrouped[yr]) receivedGrouped[yr] = [];
+            receivedGrouped[yr].push(r);
+          });
+
+          Object.keys(receivedGrouped).sort().reverse().forEach(yr => {
+            const films = receivedGrouped[yr];
+            const totalYearSpent = films.reduce((sum, f) => sum + (f.price || 0), 0);
+
+            htmlOrders += `
+              <div class="bg-[#0c0a14]/60 border border-purple-900/50 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between border-b border-purple-900/40 pb-2">
+                  <h3 class="font-retro font-bold text-xs text-emerald-400 tracking-wider">📦 PRODUITS RÉCEPTIONNÉS EN ${yr} (${films.length} articles)</h3>
+                  <span class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded border border-emerald-500/30">Total : ${totalYearSpent.toFixed(2)} €</span>
+                </div>
+                <div class="space-y-2">
+                  ${films.map(item => `
+                    <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3 opacity-75 hover:opacity-100 transition-opacity">
+                      <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
+                          ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-box text-emerald-400 text-sm"></i>`}
+                        </div>
+                        <div class="min-w-0">
+                          <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
+                          <span class="text-[10px] text-slate-400">${item.merchant || 'Fnac'} • Reçu le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
+                        </div>
+                      </div>
+                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        container.innerHTML = htmlOrders;
+
+      // VUE COLLECTION EN LIGNES PAR GENRE
       } else if (currentTab === 'collection') {
         container.className = "space-y-6";
 
         const genreGroups = {};
-
         filteredOrders.forEach(item => {
           const g = (item.genre && item.genre.trim() !== '') ? item.genre.trim().toUpperCase() : 'NON CLASSÉ';
           if (!genreGroups[g]) genreGroups[g] = [];
@@ -1080,21 +1264,12 @@
         container.className = "space-y-3";
         container.innerHTML = filteredOrders.map(item => `
           <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-4 flex items-center justify-between gap-4 shadow-lg hover:border-pink-500/50 transition-all">
-            <div class="w-14 h-14 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40 cursor-pointer" onclick="openDetailModal('${item.id}')">
+            <div class="w-14 h-14 bg-[#000000] rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-purple-900/40">
               ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-compact-disc text-neon-pink text-xl"></i>`}
             </div>
-            <div class="flex-1 min-w-0 cursor-pointer" onclick="openDetailModal('${item.id}')">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-[10px] font-retro font-bold text-neon-cyan bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">${item.merchant || 'Amazon'}</span>
-                <span class="text-[10px] font-retro font-bold text-pink-300">${item.status || 'Payé'}</span>
-              </div>
-              <h4 class="font-bold text-sm text-white truncate" title="${item.title}">${item.title}</h4>
-              <p class="text-xs text-slate-400 flex items-center gap-2 mt-1 font-medium">
-                <i class="fa-regular fa-calendar text-neon-pink"></i> 
-                <span class="text-slate-200 font-semibold">${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'}) : 'Date N/C'}</span>
-                <span class="text-slate-600">•</span>
-                <span class="text-emerald-400 font-bold">${(item.price || 0).toFixed(2)} €</span>
-              </p>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-bold text-sm text-white truncate">${item.title}</h4>
+              <p class="text-xs text-slate-400 font-medium mt-0.5">${item.genre || 'Film'}</p>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-2.5 text-xs cursor-pointer"><i class="fa-solid fa-pen text-sm"></i></button>
@@ -1108,7 +1283,7 @@
     function renderCollectionRow(item) {
       const stars = parseInt(item.rating || 0);
       return `
-        <div class="bg-black/70 border border-purple-900/40 hover:border-emerald-500/50 rounded-xl p-3 flex items-center justify-between gap-3 transition-all cursor-pointer group" onclick="openDetailModal('${item.id}')">
+        <div class="bg-black/70 border border-purple-900/40 hover:border-emerald-500/50 rounded-xl p-3 flex items-center justify-between gap-3 transition-all cursor-pointer group" onclick="openModal('${item.id}')">
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
               ${item.imageUrl 
