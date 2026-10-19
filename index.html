@@ -1003,18 +1003,24 @@
 
       emptyState.classList.add('hidden');
 
-      // VUE SORTIES CINÉMA (3 CATÉGORIES AVEC CASES À COCHER VU / PAS VU DIRECTES)
+      // VUE SORTIES CINÉMA (LOGIQUE STRICTE MOINS D'UN MOIS + DESIGN VERT FLUO)
       if (currentTab === 'cinema') {
         container.className = "space-y-8";
 
         const now = new Date().getTime();
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
+        // 1. Prochainement (date future)
         const upcomingCinema = filteredOrders.filter(o => o.releaseDate && new Date(o.releaseDate).getTime() > now);
+
+        // 2. Actuellement en salle (Strictement entre 0 et 30 jours après la sortie)
         const currentCinema = filteredOrders.filter(o => {
           if (!o.releaseDate) return false;
           const releaseTime = new Date(o.releaseDate).getTime();
-          return releaseTime <= now && o.releaseDate.startsWith(currentYear);
+          return releaseTime <= now && (now - releaseTime) <= thirtyDaysMs;
         });
+
+        // 3. Toutes les sorties 2026
         const yearCinema = filteredOrders.filter(o => o.releaseDate && o.releaseDate.startsWith(currentYear));
 
         let htmlCinema = '';
@@ -1033,12 +1039,12 @@
           `;
         }
 
-        // Catégorie 2 : Actuellement en salle (avec case à cocher)
+        // Catégorie 2 : Actuellement en salle (< 1 mois)
         if (currentCinema.length > 0) {
           htmlCinema += `
             <div>
               <h3 class="font-retro font-bold text-xs text-neon-cyan uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-cyan-500/30 pb-2">
-                <i class="fa-solid fa-play"></i> Actuellement en Salle & Séances ${currentYear} (${currentCinema.length})
+                <i class="fa-solid fa-play"></i> Actuellement en Salle (< 1 mois) (${currentCinema.length})
               </h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 ${currentCinema.map(item => renderCinemaCard(item, false)).join('')}
@@ -1047,7 +1053,7 @@
           `;
         }
 
-        // Catégorie 3 : Toutes les sorties de l'année (avec case à cocher interactive)
+        // Catégorie 3 : Toutes les sorties 2026 (Lignes vertes quand vus, contrôle à droite)
         if (yearCinema.length > 0) {
           const totalYearSpent = yearCinema.reduce((sum, f) => sum + (f.price || 0), 0);
           htmlCinema += `
@@ -1057,26 +1063,39 @@
                 <span class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded border border-amber-500/30">Total : ${totalYearSpent.toFixed(2)} €</span>
               </div>
               <div class="space-y-2">
-                ${yearCinema.map(item => `
-                  <div class="bg-black/70 border border-purple-900/40 rounded-xl p-3 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0 flex-1">
-                      <label class="flex items-center gap-2.5 cursor-pointer shrink-0" title="Cocher si vu">
-                        <input type="checkbox" ${item.status === 'Film Vu' ? 'checked' : ''} onchange="toggleWatchedStatus('${item.id}', this)" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
-                      </label>
-                      <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
-                        ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-ticket text-amber-400 text-sm"></i>`}
+                ${yearCinema.map(item => {
+                  const isWatched = item.status === 'Film Vu';
+                  return `
+                    <div class="rounded-xl p-3 flex items-center justify-between gap-3 transition-all ${
+                      isWatched 
+                        ? 'bg-emerald-950/40 border border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)]' 
+                        : 'bg-black/70 border border-purple-900/40'
+                    }">
+                      <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 bg-purple-950/40 rounded-lg overflow-hidden shrink-0 border border-purple-900/60 flex items-center justify-center">
+                          ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-ticket text-amber-400 text-sm"></i>`}
+                        </div>
+                        <div class="min-w-0">
+                          <h4 class="font-bold text-xs ${isWatched ? 'text-emerald-300' : 'text-white'} truncate">${item.title}</h4>
+                          <span class="text-[10px] text-slate-400">
+                            Sortie le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • 
+                            <strong class="${isWatched ? 'text-emerald-400' : 'text-amber-400'}">${isWatched ? 'Vu 🎬' : 'À voir'}</strong> • 
+                            <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong>
+                          </span>
+                        </div>
                       </div>
-                      <div class="min-w-0">
-                        <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
-                        <span class="text-[10px] text-slate-400">Sortie le ${item.releaseDate ? new Date(item.releaseDate).toLocaleDateString('fr-FR') : 'N/C'} • <strong class="${item.status === 'Film Vu' ? 'text-emerald-400' : 'text-amber-400'}">${item.status}</strong> • <strong class="text-emerald-400">${(item.price || 0).toFixed(2)} €</strong></span>
+
+                      <div class="flex items-center gap-2 shrink-0">
+                        <label class="flex items-center gap-1.5 cursor-pointer bg-black/60 px-2.5 py-1 rounded-lg border ${isWatched ? 'border-emerald-500/60 text-emerald-400' : 'border-purple-900/60 text-slate-400'} hover:border-emerald-500/40 transition-all">
+                          <input type="checkbox" ${isWatched ? 'checked' : ''} onchange="toggleWatchedStatus('${item.id}', this)" class="w-3.5 h-3.5 accent-emerald-500 rounded cursor-pointer">
+                          <span class="text-[11px] font-retro font-bold">${isWatched ? 'Vu' : 'À voir'}</span>
+                        </label>
+                        <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
                       </div>
                     </div>
-                    <div class="flex items-center gap-1">
-                      <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-2 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
-                      <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-2 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                  </div>
-                `).join('')}
+                  `;
+                }).join('')}
               </div>
             </div>
           `;
@@ -1241,7 +1260,7 @@
               </div>
             ` : `
               <div class="absolute top-3 right-3 bg-cyan-950/90 border border-cyan-500/60 px-2.5 py-1 rounded-lg text-[10px] font-retro font-bold text-neon-cyan">
-                Séance ${item.releaseDate ? item.releaseDate.split('-')[0] : ''} 🎬
+                En Salle 🎬
               </div>
             `}
           </div>
@@ -1256,9 +1275,9 @@
             </div>
 
             <div class="flex items-center justify-between mt-4 pt-3 border-t border-purple-900/40">
-              <label class="flex items-center gap-2 cursor-pointer bg-black/60 px-3 py-1.5 rounded-lg border border-purple-900/60 hover:border-emerald-500/40 transition-all">
+              <label class="flex items-center gap-2 cursor-pointer bg-black/60 px-3 py-1.5 rounded-lg border ${isWatched ? 'border-emerald-500/60 text-emerald-400' : 'border-purple-900/60 text-slate-300'} hover:border-emerald-500/40 transition-all">
                 <input type="checkbox" ${isWatched ? 'checked' : ''} onchange="toggleWatchedStatus('${item.id}', this)" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
-                <span class="text-xs font-retro font-bold ${isWatched ? 'text-emerald-400' : 'text-slate-300'}">${isWatched ? 'Film Vu 🎬' : 'Pas vu'}</span>
+                <span class="text-xs font-retro font-bold">${isWatched ? 'Vu 🎬' : 'À voir'}</span>
               </label>
 
               <div class="flex items-center gap-1">
