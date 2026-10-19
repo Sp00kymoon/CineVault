@@ -9,8 +9,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-  <!-- Librairie Scanner QR Code -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <script>
     tailwind.config = {
@@ -134,16 +132,6 @@
         <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-1">Outils Cinéphile</p>
         <button onclick="triggerRoulette()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-amber-300 hover:bg-amber-950/30 border border-amber-500/30 cursor-pointer">
           <i class="fa-solid fa-dice text-amber-400 w-5"></i> Ciné-Roulette
-        </button>
-      </div>
-
-      <div class="pt-4 mt-4 border-t border-purple-900/40 space-y-2">
-        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-1">Synchronisation QR</p>
-        <button onclick="openQrGeneratorModal()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-neon-pink hover:bg-pink-950/30 border border-pink-500/30 cursor-pointer">
-          <i class="fa-solid fa-qrcode text-neon-pink w-5"></i> Générer QR Code (PC)
-        </button>
-        <button onclick="openQrScannerModal()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-neon-cyan hover:bg-cyan-950/30 border border-cyan-500/30 cursor-pointer">
-          <i class="fa-solid fa-camera text-neon-cyan w-5"></i> Scanner QR Code (Mobile)
         </button>
       </div>
 
@@ -434,35 +422,6 @@
     </div>
   </div>
 
-  <!-- MODAL GENERATEUR QR CODE (PC) -->
-  <div id="qr-gen-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-[#0c0a14] border border-pink-500/50 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-[0_0_30px_rgba(255,0,127,0.3)]">
-      <h3 class="font-retro font-bold text-neon-pink text-sm tracking-wider flex items-center justify-center gap-2">
-        <i class="fa-solid fa-qrcode"></i> SYNCHRO QR CODE
-      </h3>
-      <p class="text-xs text-slate-300 font-medium">Scannez ce QR Code avec l'appareil photo de votre téléphone dans CinéVault pour transférer vos données.</p>
-      
-      <div class="p-3 bg-white rounded-xl flex items-center justify-center mx-auto w-fit shadow-inner min-h-[220px]">
-        <img id="qrcode-img" src="" alt="QR Code" class="w-52 h-52 object-contain hidden" />
-        <div id="qrcode-loader" class="text-xs font-bold text-slate-800">Génération du QR Code...</div>
-      </div>
-      
-      <button onclick="document.getElementById('qr-gen-modal').classList.add('hidden')" class="w-full bg-slate-900 text-slate-300 py-2.5 rounded-lg font-bold text-xs uppercase cursor-pointer">Fermer</button>
-    </div>
-  </div>
-
-  <!-- MODAL SCANNER QR CODE (IPHONE/MOBILE) -->
-  <div id="qr-scan-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-[#0c0a14] border border-cyan-500/50 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-[0_0_30px_rgba(0,243,255,0.3)]">
-      <h3 class="font-retro font-bold text-neon-cyan text-sm tracking-wider flex items-center justify-center gap-2">
-        <i class="fa-solid fa-camera"></i> SCANNER LE QR CODE
-      </h3>
-      <p class="text-xs text-slate-300">Scannez le QR Code affiché sur votre PC.</p>
-      <div id="qr-reader" class="w-full bg-black rounded-xl border border-purple-900/50 overflow-hidden min-h-[200px]"></div>
-      <button onclick="closeQrScannerModal()" class="w-full bg-slate-900 text-slate-300 py-2.5 rounded-lg font-bold text-xs uppercase cursor-pointer">Annuler</button>
-    </div>
-  </div>
-
   <!-- MODAL CINÉ-ROULETTE -->
   <div id="roulette-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
     <div class="bg-[#0c0a14] border border-amber-500/50 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
@@ -486,7 +445,6 @@
     let currentFormatFilter = 'ALL';
     let orders = [];
     let countdownInterval = null;
-    let html5QrScanner = null;
 
     try {
       const savedData = localStorage.getItem('cinevault_clean_v1');
@@ -589,64 +547,6 @@
       } else if (previewContainer) {
         previewContainer.classList.add('hidden');
       }
-    }
-
-    // GENERATEUR QR CODE FIABLE PAR IMAGE DYNAMIQUE
-    function openQrGeneratorModal() {
-      const modal = document.getElementById('qr-gen-modal');
-      const qrImg = document.getElementById('qrcode-img');
-      const qrLoader = document.getElementById('qrcode-loader');
-      
-      qrImg.classList.add('hidden');
-      qrLoader.classList.remove('hidden');
-      modal.classList.remove('hidden');
-      toggleSidebar();
-
-      const payload = encodeURIComponent(JSON.stringify(orders));
-      const apiUrl = `https://quickchart.io/qr?text=${payload}&size=250&margin=1`;
-
-      qrImg.onload = function() {
-        qrLoader.classList.add('hidden');
-        qrImg.classList.remove('hidden');
-      };
-
-      qrImg.onerror = function() {
-        qrLoader.innerText = "Erreur de génération. Données trop volumineuses pour un QR Code.";
-      };
-
-      qrImg.src = apiUrl;
-    }
-
-    function openQrScannerModal() {
-      const modal = document.getElementById('qr-scan-modal');
-      modal.classList.remove('hidden');
-      toggleSidebar();
-
-      if (html5QrScanner) {
-        html5QrScanner.clear().catch(e => {});
-      }
-
-      setTimeout(() => {
-        html5QrScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 200 }, false);
-        html5QrScanner.render((decodedText) => {
-          try {
-            const imported = JSON.parse(decodedText);
-            if (Array.isArray(imported)) {
-              orders = imported;
-              saveToStorage();
-              alert("Synchronisation réussie ! Vos données sont à jour.");
-              closeQrScannerModal();
-            }
-          } catch(e) { alert("Code QR invalide."); }
-        }, (errorMessage) => {});
-      }, 150);
-    }
-
-    function closeQrScannerModal() {
-      if (html5QrScanner) {
-        html5QrScanner.clear().catch(e => {});
-      }
-      document.getElementById('qr-scan-modal').classList.add('hidden');
     }
 
     function exportDataText() {
@@ -839,7 +739,7 @@
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
         lblPrice.innerText = "PRIX TOTAL (€)";
-        wrpStatus.classList.remove('hidden');
+        wrpStatus.classList.add('hidden');
       } else {
         grpClass.classList.remove('hidden');
         wrpSaga.classList.remove('hidden');
@@ -857,7 +757,7 @@
         grpPriceStatus.classList.remove('hidden');
         wrpPrice.classList.remove('hidden');
         lblPrice.innerText = "PRIX D'ACHAT (€)";
-        wrpStatus.classList.remove('hidden');
+        wrpStatus.classList.add('hidden');
       }
 
       if (id) {
