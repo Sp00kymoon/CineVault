@@ -72,6 +72,11 @@
       border-radius: 50%;
       border: 1px solid rgba(255, 255, 255, 0.4);
     }
+    /* Forcer l'affichage du calendrier dans les inputs de type date sur iOS/Navigateurs */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
   </style>
   <link rel="apple-touch-icon" href="icon.png">
 </head>
@@ -270,7 +275,7 @@
         <form id="order-form" onsubmit="saveOrder(event)" class="space-y-4">
           <input type="hidden" id="item-id">
 
-          <!-- TITRE DU FILM (TOUJOURS PRÉSENT) -->
+          <!-- TITRE DU FILM -->
           <div>
             <label class="block text-xs font-retro font-bold text-neon-pink tracking-wider mb-1">TITRE DU FILM *</label>
             <input type="text" id="title" required oninput="checkDuplicate(this.value)" placeholder="Ex: Saw X, Avatar, Gladiator..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-neon-pink font-semibold">
@@ -280,7 +285,7 @@
             </div>
           </div>
 
-          <!-- CHAMPS DE CLASSIFICATION (COLLECTION / SORTIES) -->
+          <!-- CHAMPS DE CLASSIFICATION (GENRE / SAGA) -->
           <div id="field-group-classification" class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">GENRE / TYPE FILM</label>
@@ -310,11 +315,11 @@
             </div>
           </div>
 
-          <!-- DATES & ANNÉE -->
+          <!-- DATES & ANNÉE (CALENDRIER INTERACTIF TYPE="DATE") -->
           <div id="field-group-dates" class="grid grid-cols-2 gap-4">
             <div id="field-wrapper-release-date">
               <label id="label-release-date" class="block text-xs font-bold text-slate-300 tracking-wider mb-1">DATE DE SORTIE *</label>
-              <input type="date" id="release-date" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold">
+              <input type="date" id="release-date" class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink font-semibold cursor-pointer">
             </div>
             <div id="field-wrapper-year">
               <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">ANNÉE DU FILM</label>
@@ -322,7 +327,7 @@
             </div>
           </div>
 
-          <!-- RÉALISATEUR ET ACTEURS (COLLECTION UNIQUEMENT) -->
+          <!-- RÉALISATEUR ET ACTEURS -->
           <div id="field-group-credits" class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">RÉALISATEUR(S)</label>
@@ -334,13 +339,13 @@
             </div>
           </div>
 
-          <!-- SYNOPSIS (COLLECTION ET PRÉCOMMANDES) -->
+          <!-- SYNOPSIS -->
           <div id="field-group-synopsis">
             <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">SYNOPSIS / RÉSUMÉ</label>
             <textarea id="synopsis" rows="2" placeholder="Résumé du film..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink"></textarea>
           </div>
 
-          <!-- NOTE & PRÊT (COLLECTION) -->
+          <!-- NOTE & PRÊT -->
           <div id="field-group-rating-loan" class="grid grid-cols-2 gap-4 p-3 bg-purple-950/30 rounded-xl border border-purple-900/50">
             <div>
               <label class="block text-xs font-bold text-amber-300 tracking-wider mb-1">NOTE (ÉTOILES)</label>
@@ -359,7 +364,7 @@
             </div>
           </div>
 
-          <!-- FORMAT & SITE MARCHAND (DÉROULANT COMPLET) -->
+          <!-- FORMAT & SITE MARCHAND -->
           <div id="field-group-format-merchant" class="grid grid-cols-2 gap-4">
             <div id="field-wrapper-format">
               <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">FORMAT</label>
@@ -386,7 +391,7 @@
             </div>
           </div>
 
-          <!-- PRIX & STATUT SUR MESURE -->
+          <!-- PRIX & STATUT -->
           <div id="field-group-price-status" class="grid grid-cols-2 gap-4">
             <div id="field-wrapper-price">
               <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">PRIX (€)</label>
@@ -709,10 +714,10 @@
       const lblReleaseDate = document.getElementById('label-release-date');
 
       if (currentTab === 'cinema') {
-        // FORMULAIRE ULTRA SIMPLIFIÉ POUR LES SORTIES CINÉMA
+        // FORMULAIRE SORTIES CINÉMA (Titre, Genre, Date de sortie calendrier, Image)
         grpClass.classList.remove('hidden');
         wrpSaga.classList.add('hidden');
-        grpImg.classList.add('hidden');
+        grpImg.classList.remove('hidden'); // Image activée pour le ciné
         grpDates.classList.remove('hidden');
         wrpReleaseDate.classList.remove('hidden');
         lblReleaseDate.innerText = "DATE DE SORTIE EN SALLE *";
@@ -723,15 +728,15 @@
         grpFormatMerc.classList.add('hidden');
         grpPriceStatus.classList.add('hidden');
       } else if (currentTab === 'orders') {
-        // FORMULAIRE PRÉCOMMANDES (Titre, Prix, Site marchand, Date, Statut, Photo, Synopsis)
+        // FORMULAIRE PRÉCOMMANDES (Sans résumé, avec calendrier de date, photo, etc.)
         grpClass.classList.add('hidden');
         grpImg.classList.remove('hidden');
         grpDates.classList.remove('hidden');
         wrpReleaseDate.classList.remove('hidden');
-        lblReleaseDate.innerText = "DATE DE SORTIE PRÉVUE";
+        lblReleaseDate.innerText = "DATE DE SORTIE PRÉVUE *";
         wrpYear.classList.add('hidden');
         grpCredits.classList.add('hidden');
-        grpSynopsis.classList.remove('hidden');
+        grpSynopsis.classList.add('hidden'); // Synopsis retiré pour les précommandes
         grpRating.classList.add('hidden');
         grpFormatMerc.classList.remove('hidden');
         wrpFormat.classList.remove('hidden');
@@ -965,6 +970,24 @@
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           statNextRelease.innerText = diffDays > 0 ? `${diffDays}j (${next.title})` : (diffDays === 0 ? "Aujourd'hui !" : "Sorti");
         } else if (statNextRelease) { statNextRelease.innerText = "Aucune date"; }
+      } else if (currentTab === 'collection') {
+        if (statDebitBox) statDebitBox.classList.remove('hidden');
+        if (statLabelLeft) statLabelLeft.innerText = "Note Moyenne";
+        
+        // Calcul de la note moyenne de la collection
+        const ratedFilms = filteredOrders.filter(o => o.rating && parseInt(o.rating) > 0);
+        if (ratedFilms.length > 0) {
+          const avgRating = ratedFilms.reduce((sum, o) => sum + parseInt(o.rating), 0) / ratedFilms.length;
+          const fullStars = Math.round(avgRating);
+          statNextRelease.innerHTML = `<span class="text-amber-400">` + '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars) + `</span> <span class="text-xs text-slate-300">(${avgRating.toFixed(1)}/5)</span>`;
+        } else {
+          statNextRelease.innerText = "Aucune note";
+        }
+
+        const totalSpent = filteredOrders.reduce((sum, o) => sum + (o.price || 0), 0);
+        if (statTotalDebit) statTotalDebit.innerText = `${totalSpent.toFixed(2)} €`;
+        const statLabelCenter = document.getElementById('stat-label-center');
+        if (statLabelCenter) statLabelCenter.innerText = "Valeur Collection";
       } else {
         if (statDebitBox) statDebitBox.classList.add('hidden');
         if (statLabelLeft) statLabelLeft.innerText = "Prochain Film";
@@ -1021,7 +1044,6 @@
         startCountdowns();
 
       } else if (currentTab === 'collection') {
-        // AFFICHAGE COLLECTION EN LIGNES AVEC SÉPARATION PAR GENRE
         container.className = "space-y-6";
 
         const genreGroups = {};
@@ -1055,7 +1077,6 @@
         container.innerHTML = htmlContent;
 
       } else {
-        // VUE PRÉCOMMANDES / WISHLIST
         container.className = "space-y-3";
         container.innerHTML = filteredOrders.map(item => `
           <div class="bg-[#0c0a14]/90 border border-purple-900/60 rounded-xl p-4 flex items-center justify-between gap-4 shadow-lg hover:border-pink-500/50 transition-all">
@@ -1084,7 +1105,6 @@
       }
     }
 
-    // RENDER LIGNE COLLECTION (AFFICHAGE ÉPURÉ EN LIGNE)
     function renderCollectionRow(item) {
       const stars = parseInt(item.rating || 0);
       return `
