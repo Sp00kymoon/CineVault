@@ -9,8 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-  <!-- Librairies QR Code -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Librairie Scanner QR Code -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <script>
@@ -188,7 +187,7 @@
 
     <div id="view-items">
       
-      <!-- STATISTIQUES & METRICS (4 CARRÉS POUR LES PRÉCOMMANDES) -->
+      <!-- STATISTIQUES & METRICS (4 CARRÉS DANS LES PRÉCOMMANDES) -->
       <div id="stats-box" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-[#0c0a14]/90 p-4 rounded-xl border border-pink-500/30 neon-box-pink backdrop-blur-sm flex flex-col justify-between">
           <p class="text-[10px] sm:text-xs font-bold tracking-widest text-pink-300 uppercase" id="stat-label-left">Prochaine Sortie</p>
@@ -441,10 +440,13 @@
       <h3 class="font-retro font-bold text-neon-pink text-sm tracking-wider flex items-center justify-center gap-2">
         <i class="fa-solid fa-qrcode"></i> SYNCHRO QR CODE
       </h3>
-      <p class="text-xs text-slate-300 font-medium">Scannez ce QR Code avec l'appareil photo de votre téléphone dans l'application CinéVault pour transférer vos données.</p>
-      <div class="p-3 bg-white rounded-xl flex items-center justify-center mx-auto w-fit shadow-inner">
-        <div id="qrcode-target"></div>
+      <p class="text-xs text-slate-300 font-medium">Scannez ce QR Code avec l'appareil photo de votre téléphone dans CinéVault pour transférer vos données.</p>
+      
+      <div class="p-3 bg-white rounded-xl flex items-center justify-center mx-auto w-fit shadow-inner min-h-[220px]">
+        <img id="qrcode-img" src="" alt="QR Code" class="w-52 h-52 object-contain hidden" />
+        <div id="qrcode-loader" class="text-xs font-bold text-slate-800">Génération du QR Code...</div>
       </div>
+      
       <button onclick="document.getElementById('qr-gen-modal').classList.add('hidden')" class="w-full bg-slate-900 text-slate-300 py-2.5 rounded-lg font-bold text-xs uppercase cursor-pointer">Fermer</button>
     </div>
   </div>
@@ -455,8 +457,8 @@
       <h3 class="font-retro font-bold text-neon-cyan text-sm tracking-wider flex items-center justify-center gap-2">
         <i class="fa-solid fa-camera"></i> SCANNER LE QR CODE
       </h3>
-      <p class="text-xs text-slate-300">Veuillez autoriser l'accès à la caméra pour scanner.</p>
-      <div id="qr-reader" class="w-full bg-black rounded-xl border border-purple-900/50 overflow-hidden"></div>
+      <p class="text-xs text-slate-300">Scannez le QR Code affiché sur votre PC.</p>
+      <div id="qr-reader" class="w-full bg-black rounded-xl border border-purple-900/50 overflow-hidden min-h-[200px]"></div>
       <button onclick="closeQrScannerModal()" class="w-full bg-slate-900 text-slate-300 py-2.5 rounded-lg font-bold text-xs uppercase cursor-pointer">Annuler</button>
     </div>
   </div>
@@ -589,25 +591,30 @@
       }
     }
 
-    // GENERATEUR QR CODE CORRIGÉ
+    // GENERATEUR QR CODE FIABLE PAR IMAGE DYNAMIQUE
     function openQrGeneratorModal() {
       const modal = document.getElementById('qr-gen-modal');
-      const target = document.getElementById('qrcode-target');
-      target.innerHTML = '';
+      const qrImg = document.getElementById('qrcode-img');
+      const qrLoader = document.getElementById('qrcode-loader');
+      
+      qrImg.classList.add('hidden');
+      qrLoader.classList.remove('hidden');
       modal.classList.remove('hidden');
       toggleSidebar();
 
-      setTimeout(() => {
-        const payload = JSON.stringify(orders);
-        new QRCode(target, {
-          text: payload,
-          width: 200,
-          height: 200,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.H
-        });
-      }, 100);
+      const payload = encodeURIComponent(JSON.stringify(orders));
+      const apiUrl = `https://quickchart.io/qr?text=${payload}&size=250&margin=1`;
+
+      qrImg.onload = function() {
+        qrLoader.classList.add('hidden');
+        qrImg.classList.remove('hidden');
+      };
+
+      qrImg.onerror = function() {
+        qrLoader.innerText = "Erreur de génération. Données trop volumineuses pour un QR Code.";
+      };
+
+      qrImg.src = apiUrl;
     }
 
     function openQrScannerModal() {
@@ -615,8 +622,12 @@
       modal.classList.remove('hidden');
       toggleSidebar();
 
+      if (html5QrScanner) {
+        html5QrScanner.clear().catch(e => {});
+      }
+
       setTimeout(() => {
-        html5QrScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 220 }, false);
+        html5QrScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 200 }, false);
         html5QrScanner.render((decodedText) => {
           try {
             const imported = JSON.parse(decodedText);
@@ -628,7 +639,7 @@
             }
           } catch(e) { alert("Code QR invalide."); }
         }, (errorMessage) => {});
-      }, 200);
+      }, 150);
     }
 
     function closeQrScannerModal() {
@@ -1153,7 +1164,7 @@
         container.innerHTML = htmlCinema;
         startCountdowns();
 
-      // VUE PRÉCOMMANDES EN LIGNES (FORMAT INITIAL NICKEL)
+      // VUE PRÉCOMMANDES EN LIGNES
       } else if (currentTab === 'orders') {
         container.className = "space-y-6";
 
