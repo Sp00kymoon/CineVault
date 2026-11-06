@@ -136,13 +136,14 @@
       </div>
 
       <div class="pt-4 mt-4 border-t border-purple-900/40">
-        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Sauvegarde Texte</p>
-        <button onclick="exportDataText()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer">
-          <i class="fa-solid fa-copy text-emerald-400 w-5"></i> Copier le texte
+        <p class="text-[10px] font-retro font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Sauvegarde & Transfert (iPhone)</p>
+        <button onclick="exportDataFile()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer bg-emerald-950/30 border border-emerald-500/30">
+          <i class="fa-solid fa-file-arrow-down text-emerald-400 w-5"></i> Exporter un fichier
         </button>
-        <button onclick="importDataText()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer mt-1">
-          <i class="fa-solid fa-paste text-cyan-400 w-5"></i> Coller un texte
+        <button onclick="document.getElementById('import-file-input').click()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-retro font-bold tracking-wider transition-all text-slate-300 hover:bg-slate-900 hover:text-white cursor-pointer mt-1.5 bg-cyan-950/30 border border-cyan-500/30">
+          <i class="fa-solid fa-file-arrow-up text-cyan-400 w-5"></i> Importer un fichier
         </button>
+        <input type="file" id="import-file-input" accept=".json" onchange="importDataFile(event)" class="hidden">
       </div>
     </div>
   </aside>
@@ -170,7 +171,7 @@
     </div>
   </header>
 
-  <!-- CONTENU PRINCIPAL (CADRE ÉLARGI SUR PC) -->
+  <!-- CONTENU PRINCIPAL -->
   <main class="p-4 sm:p-6 max-w-7xl mx-auto">
 
     <div id="view-items">
@@ -300,7 +301,7 @@
 
   </main>
 
-  <!-- MODAL D'AJOUT / ÉDITION ADAPTATIF -->
+  <!-- MODAL D'AJOUT / ÉDITION -->
   <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
     <div class="bg-[#0c0a14] border border-pink-500/40 w-full max-w-lg rounded-2xl shadow-[0_0_40px_rgba(255,0,127,0.25)] flex flex-col">
       
@@ -327,7 +328,7 @@
             </div>
           </div>
 
-          <!-- SAGA / FRANCHISE (COLLECTION & CINÉMA) -->
+          <!-- SAGA / FRANCHISE -->
           <div id="field-wrapper-saga">
             <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">SAGA / FRANCHISE (Ex: Saw, Alien...)</label>
             <input type="text" id="saga" placeholder="Pour classer les suites ensemble..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
@@ -339,7 +340,7 @@
             <input type="text" id="genre" placeholder="Ex: Horreur, Sci-Fi..." class="w-full bg-[#000000] border border-purple-900/80 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-neon-pink">
           </div>
 
-          <!-- IMAGE (PRÉCOMMANDES & CINÉMA UNIQUEMENT) -->
+          <!-- IMAGE -->
           <div id="field-group-image">
             <label class="block text-xs font-bold text-slate-300 tracking-wider mb-1">IMAGE / AFFICHE</label>
             <div class="space-y-2">
@@ -570,25 +571,42 @@
       }
     }
 
-    function exportDataText() {
-      const dataStr = JSON.stringify(orders);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(dataStr).then(() => { alert("Données copiées !"); toggleSidebar(); }).catch(() => { prompt("Copie ce code :", dataStr); });
-      } else { prompt("Copie ce code :", dataStr); }
+    // EXPORT DE FICHIER JSON (PARFAIT POUR IPHONE / AIRDROP)
+    function exportDataFile() {
+      const dataStr = JSON.stringify(orders, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cinevault-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toggleSidebar();
     }
 
-    function importDataText() {
-      const inputStr = prompt("Colle ici le code de sauvegarde :");
-      if (!inputStr) return;
-      try {
-        const imported = JSON.parse(inputStr);
-        if (Array.isArray(imported)) {
-          orders = imported;
-          saveToStorage();
-          alert("Import réussi !");
-          toggleSidebar();
-        } else { alert("Format invalide."); }
-      } catch(err) { alert("Erreur de lecture."); }
+    // IMPORT DE FICHIER JSON (SANS BUG DE TEXTE SUR MOBILE)
+    function importDataFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            orders = imported;
+            saveToStorage();
+            alert("Importation du fichier réussie !");
+            toggleSidebar();
+          } else {
+            alert("Format de fichier invalide.");
+          }
+        } catch(err) {
+          alert("Erreur lors de la lecture du fichier.");
+        }
+      };
+      reader.readAsText(file);
     }
 
     function setFormatFilter(fmt) {
@@ -736,7 +754,7 @@
       const lblPrice = document.getElementById('label-price');
 
       if (currentTab === 'collection') {
-        grpImg.classList.add('hidden'); // SUPPRESSION PHOTO SUR COLLECTION
+        grpImg.classList.add('hidden');
         wrpSaga.classList.remove('hidden');
         wrpGenre.classList.remove('hidden');
         grpDates.classList.remove('hidden');
@@ -759,7 +777,6 @@
         grpPriceStatus.classList.remove('hidden');
         lblPrice.innerText = "PRIX DE LA PLACE (€)";
       } else {
-        // Précommandes
         grpImg.classList.remove('hidden');
         wrpSaga.classList.add('hidden');
         wrpGenre.classList.add('hidden');
@@ -899,7 +916,6 @@
 
       const currentYear = new Date().getFullYear().toString();
 
-      // METRICS ET CALCULS PRÉCOMMANDES
       if (currentTab === 'orders') {
         const now = new Date().getTime();
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
@@ -971,11 +987,9 @@
 
       emptyState.classList.add('hidden');
 
-      // 1. VUE PRÉCOMMANDES (TRI DU PLUS COURT AU PLUS LONG + OPTIMISÉ PC)
       if (currentTab === 'orders') {
         container.className = "space-y-6";
 
-        // TRI DU PLUS PROCHE AU PLUS LOINTAIN
         const pendingOrders = filteredOrders
           .filter(o => o.status !== 'Réceptionné')
           .sort((a, b) => {
@@ -1070,7 +1084,6 @@
 
         container.innerHTML = htmlOrders;
 
-      // 2. VUE COLLECTION (SANS PHOTO + REGROUPEMENT SAGA ET PRÊT VISUEL)
       } else if (currentTab === 'collection') {
         container.className = "space-y-6";
 
@@ -1078,7 +1091,6 @@
         let htmlContent = '';
 
         if (sortMode === 'saga') {
-          // REGROUPEMENT PAR SAGA / FRANCHISE
           const sagaGroups = {};
           filteredOrders.forEach(item => {
             const sagaName = (item.saga && item.saga.trim() !== '') ? item.saga.trim().toUpperCase() : 'FILMS INDÉPENDANTS / AUTRES';
@@ -1105,7 +1117,6 @@
             `;
           });
         } else {
-          // LISTE UNIQUE (ALPHABÉTIQUE OU DATE D'AJOUT)
           if (sortMode === 'alpha') {
             filteredOrders.sort((a, b) => a.title.localeCompare(b.title));
           }
@@ -1118,7 +1129,6 @@
 
         container.innerHTML = htmlContent;
 
-      // 3. VUE SORTIES CINÉMA (< 1 MOIS + LISTE VERTE)
       } else if (currentTab === 'cinema') {
         container.className = "space-y-8";
 
@@ -1303,7 +1313,7 @@
 
               <div class="flex items-center gap-1">
                 <button onclick="openModal('${item.id}')" class="text-slate-400 hover:text-neon-cyan p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-neon-pink p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                <button onclick="deleteOrder('${item.id}')" class="text-slate-400 hover:text-pink-500 p-1.5 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
               </div>
             </div>
           </div>
@@ -1315,10 +1325,7 @@
       const selectedYear = document.getElementById('bilan-year-select').value;
 
       const collectionFilms = orders.filter(o => o.category === 'collection' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
-      
-      // RÈGLE STRICTE : Seules les précommandes RÉCEPTIONNÉES figurent au Bilan
       const yearOrders = orders.filter(o => o.category === 'orders' && o.status === 'Réceptionné' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
-      
       const yearCinema = orders.filter(o => o.category === 'cinema' && o.status === 'Film Vu' && o.releaseDate && o.releaseDate.startsWith(selectedYear));
 
       const spentCollection = collectionFilms.reduce((sum, o) => sum + (o.price || 0), 0);
